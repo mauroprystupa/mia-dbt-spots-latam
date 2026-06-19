@@ -2,7 +2,7 @@
 
 Pipeline dbt + BigQuery que unifica datos de spots publicitarios de TV y Radio de **Brasil** y **México** para el producto **MIA**.
 
-Procesa ~27k spots diarios desde tablas consolidadas en `mia_raw`, aplica lógica de negocio estandarizada en capas intermedias y expone una tabla de hechos en `mia_marts` lista para dashboards y análisis.
+Procesa spots desde tablas consolidadas en `mia_raw`, aplica lógica de negocio estandarizada en capas intermedias y expone una tabla de hechos en `mia_marts` lista para dashboards y análisis.
 
 ---
 
@@ -21,9 +21,9 @@ Procesa ~27k spots diarios desde tablas consolidadas en `mia_raw`, aplica lógic
 ```
 mia_raw           →  tablas fuente por mercado (brasil, mexico)
       ↓
-mia_staging       →  vistas: limpieza, parseo, dedup intra-archivo
+mia_staging       →  tablas: limpieza, parseo, dedup intra-archivo
       ↓
-mia_intermediate  →  vistas: validación, segmentos, costos, normalización
+mia_intermediate  →  tablas: validación, segmentos, costos, normalización
       ↓
 mia_marts         →  tablas: fct_spots + dimensiones
 ```
@@ -31,8 +31,8 @@ mia_marts         →  tablas: fct_spots + dimensiones
 | Dataset | Materialización | Responsabilidad |
 |---------|----------------|----------------|
 | `mia_raw` | Tabla | Fuente consolidada con columna `archivo_fuente` para lineage |
-| `mia_staging` | Vista | Parseo, casteos y dedup intra-archivo por mercado |
-| `mia_intermediate` | Vista | Unificación, validación de falsos positivos, segmentos, costos, referencias |
+| `mia_staging` | Tabla | Parseo, casteos y dedup intra-archivo por mercado |
+| `mia_intermediate` | Tabla | Unificación, validación de falsos positivos, segmentos, costos, referencias |
 | `mia_marts` | Tabla (particionada + clustered) | `fct_spots`, `dim_canales`, `dim_marcas`, `dim_segmentos` |
 
 ---
@@ -71,7 +71,7 @@ Esto implica tres supuestos que deben cumplirse para que el pipeline funcione co
 
 1. **El proveedor nombra sus archivos con la fecha de exportación en formato `YYYYMMDD`.** Si cambia el formato del nombre (ej. `brasil_31-08-2024.csv`), el campo `archivo_fuente` ya no es comparable y el DENSE_RANK elige los archivos incorrectos.
 
-2. **Un archivo `YYYYMMDD` puede contener spots de cualquier fecha de emisión anterior.** El nombre del archivo refleja cuándo el proveedor exportó el snapshot, no qué días cubre. Por eso `fecha_emision` y `archivo_fuente` son columnas independientes y la ventana deslizante opera sobre `archivo_fuente`, no sobre `fecha_emision`.
+2. **Cada archivo cubre una ventana de N días consecutivos inmediatamente anteriores a su fecha de nombre.** El archivo `20240831` contiene spots de los N días previos al 31 de agosto; el archivo `20240901` contiene spots de los N días previos al 1 de septiembre. Ambos se solapan en N-1 días, lo que permite detectar qué spots de dia1 no fueron re-auditados en dia2 (falsos positivos). Si un archivo llegara con datos de un período sin solapamiento con el archivo anterior, los spots de dia1 no tendrían matches en dia2 y serían marcados incorrectamente como `is_valid = FALSE`.
 
 3. **El orden lexicográfico de `archivo_fuente` coincide con el orden cronológico.** Esto es verdad mientras el formato sea `YYYYMMDD` con ceros a la izquierda: `'20240901' > '20240831'` carácter a carácter. Si el formato fuera `D/M/YYYY`, el orden lexicográfico sería incorrecto y el DENSE_RANK elegiría los archivos equivocados.
 
@@ -119,11 +119,6 @@ dbt debug --project-dir dbt
 ## Correr el pipeline
 
 ```bash
-# Staging (estado actual)
-dbt run  --project-dir dbt --select staging
-dbt test --project-dir dbt --select staging
-
-# Pipeline completo (cuando intermediate y marts estén implementados)
 dbt run  --project-dir dbt
 dbt test --project-dir dbt
 ```
