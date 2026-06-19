@@ -19,3 +19,20 @@ sources:
         description: >
           Todos los spots de Mexico. UNION de mercado_mexico_20240830 y
           mercado_mexico_20240831. Ventana deslizante de 7 dias.
+
+  - name: mia_ref
+    database: web-nineteen
+    schema: mia_ref
+    description: >
+      Tablas de referencia gestionadas fuera del pipeline dbt.
+      Los equipos de negocio editan estas tablas directamente en BigQuery (vía Sheets)
+      sin necesidad de un ciclo de deploy. Ver README para justificación de diseño vs dbt seeds.
+    tables:
+      - name: ref_canales
+        description: >
+          Mapeo de canal_raw (tal como viene en la fuente) al nombre normalizado y grupo.
+          JOIN por (canal_raw, mercado). Fallback: canal_normalizado = canal_raw si no hay match.
+      - name: ref_marcas
+        description: >
+          Mapeo de marca_raw al nombre comercial oficial.
+          JOIN solo por marca_raw (normalización cross-market). Fallback: marca_comercial = marca_raw.

@@ -1,0 +1,212 @@
+version: 2
+
+models:
+  - name: int_spots_unificados
+    description: >
+      UNION ALL de stg_brasil y stg_mexico con schema canónico común.
+      Normaliza medio_raw al enum (TELEVISION_CABLE, TELEVISION_ABIERTA, RADIO_FM, RADIO_AM).
+      Sin dedup ni is_valid — eso es responsabilidad de int_spots_validados.
+      Columnas market-specific se preservan como NULL para el mercado que no las tiene.
+    columns:
+      - name: mercado
+        description: Mercado de emisión. BRASIL o MEXICO.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['BRASIL', 'MEXICO']
+
+      - name: archivo_fuente
+        description: Fecha del archivo de origen. Discrimina dia1 vs dia2.
+        tests:
+          - not_null
+
+      - name: fecha_emision
+        description: Fecha de emisión en hora local.
+        tests:
+          - not_null
+
+      - name: hora_emision
+        description: Hora de emisión en hora local.
+        tests:
+          - not_null
+
+      - name: medio_raw
+        description: Valor original del campo medio en la fuente. Se preserva para auditoría.
+        tests:
+          - not_null
+
+      - name: medio
+        description: >
+          Tipo de medio normalizado al enum canónico.
+          TELEVISION_CABLE, TELEVISION_ABIERTA, RADIO_FM, RADIO_AM.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['TELEVISION_CABLE', 'TELEVISION_ABIERTA', 'RADIO_FM', 'RADIO_AM']
+
+      - name: canal_raw
+        description: Nombre del canal tal como viene en la fuente.
+        tests:
+          - not_null
+
+      - name: marca_raw
+        description: Nombre de marca tal como viene en la fuente.
+        tests:
+          - not_null
+
+      - name: duracion_segundos
+        description: Duración real emitida en segundos.
+        tests:
+          - not_null
+
+      - name: duracion_programada_segundos
+        description: >
+          Duración planificada en segundos. Solo disponible para México.
+          NULL para Brasil. Se usa en la clave natural de int_spots_validados.
+
+  - name: int_spots_validados
+    description: >
+      Deduplicación cross-archivo y clasificación de validez.
+      Dia2 gana frente a dia1 en la misma clave natural.
+      is_valid=FALSE marca falsos positivos (spots que aparecen en dia1 pero no en dia2,
+      y cuya fecha no es la mínima del dia1, es decir, no cayeron de la ventana deslizante).
+      Todos los registros se preservan — is_valid=FALSE nunca se elimina físicamente.
+    columns:
+      - name: mercado
+        description: Mercado de emisión. BRASIL o MEXICO.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['BRASIL', 'MEXICO']
+
+      - name: archivo_fuente
+        description: Fecha del archivo de origen.
+        tests:
+          - not_null
+
+      - name: fecha_emision
+        description: Fecha de emisión en hora local.
+        tests:
+          - not_null
+
+      - name: hora_emision
+        description: Hora de emisión en hora local.
+        tests:
+          - not_null
+
+      - name: medio
+        description: Tipo de medio normalizado al enum canónico.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['TELEVISION_CABLE', 'TELEVISION_ABIERTA', 'RADIO_FM', 'RADIO_AM']
+
+      - name: canal_raw
+        description: Nombre del canal tal como viene en la fuente.
+        tests:
+          - not_null
+
+      - name: marca_raw
+        description: Nombre de marca tal como viene en la fuente.
+        tests:
+          - not_null
+
+      - name: duracion_segundos
+        description: Duración real emitida en segundos.
+        tests:
+          - not_null
+
+      - name: is_valid
+        description: >
+          FALSE = falso positivo (dia1 sin confirmación en dia2 y fecha > min_fecha_dia1).
+          TRUE = spot válido para análisis.
+        tests:
+          - not_null
+
+  - name: int_segmentos_horarios
+    description: >
+      Agrega segmento_horario según la hora local de cada spot.
+      Primetime cruza medianoche: 18:00–01:59. Day: 08:00–17:59. Greytime: 02:00–07:59.
+    columns:
+      - name: mercado
+        tests:
+          - not_null
+
+      - name: fecha_emision
+        tests:
+          - not_null
+
+      - name: hora_emision
+        tests:
+          - not_null
+
+      - name: segmento_horario
+        description: Primetime, Day o Greytime según hora local.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Primetime', 'Day', 'Greytime']
+
+      - name: is_valid
+        tests:
+          - not_null
+
+  - name: int_costos_estimados
+    description: >
+      Calcula costo_usd_estimado y costo_usd_final para todos los spots.
+      costo_usd_final nunca es NULL: usa COALESCE de 3 niveles de fallback cuando no hay costo real.
+      Nivel 1 = AVG por (mercado, medio, segmento_horario).
+      Nivel 2 = AVG por (medio, segmento_horario) cross-mercado.
+      Nivel 3 = AVG por segmento_horario (garantía anti-NULL).
+    columns:
+      - name: mercado
+        tests:
+          - not_null
+
+      - name: costo_usd_estimado
+        description: >
+          Promedio estimado para el grupo. NULL cuando costo_usd_real IS NOT NULL
+          (no se sobreescribe un dato real en costo_usd_final).
+
+      - name: costo_usd_final
+        description: >
+          COALESCE(costo_usd_real, costo_usd_estimado). Nunca NULL.
+        tests:
+          - not_null
+
+  - name: int_canales_normalizados
+    description: >
+      Enriquece cada spot con canal_normalizado y grupo_canal via JOIN contra mia_ref.ref_canales.
+      Fallback: canal_normalizado = canal_raw si no hay match en ref. grupo_canal puede ser NULL.
+    columns:
+      - name: mercado
+        tests:
+          - not_null
+
+      - name: canal_raw
+        tests:
+          - not_null
+
+      - name: canal_normalizado
+        description: Nombre normalizado del canal. Nunca NULL (fallback a canal_raw).
+        tests:
+          - not_null
+
+  - name: int_marcas_normalizadas
+    description: >
+      Enriquece cada spot con marca_comercial via JOIN contra mia_ref.ref_marcas.
+      Fallback: marca_comercial = marca_raw si no hay match en ref.
+      Es el modelo final de la capa intermediate — alimenta directamente a fct_spots.
+    columns:
+      - name: mercado
+        tests:
+          - not_null
+
+      - name: marca_raw
+        tests:
+          - not_null
+
+      - name: marca_comercial
+        description: Nombre comercial de la marca. Nunca NULL (fallback a marca_raw).
+        tests:
+          - not_null

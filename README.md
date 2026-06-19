@@ -126,4 +126,39 @@ Los modelos de staging incluyen:
 
 ## Tablas de referencia
 
-`mia_ref.ref_canales` y `mia_ref.ref_marcas` se cargan desde Google Sheets directamente a BigQuery, fuera del scope de este pipeline dbt.
+Las tablas de referencia viven en el dataset `mia_ref` y son gestionadas fuera del pipeline dbt — se cargan directamente a BigQuery sin pasar por el repositorio.
+
+**Por qué tablas externas y no dbt seeds:**
+dbt seeds están pensados para datos pequeños y estáticos que cambian muy poco — catálogos de países, códigos de moneda, configuraciones fijas. El problema es que cualquier cambio requiere un ciclo completo de deploy: editar el CSV en el repo, commit, PR, merge, y recién entonces el cambio se refleja en producción.
+
+En un producto como MIA, donde los clientes pueden pedir que una marca cambie de nombre o que se agregue un alias de canal, ese ciclo es un problema operativo real. Las tablas en BigQuery rompen ese acoplamiento: el equipo de negocio puede editar el diccionario de marcas o los aliases de canales directamente, sin tocar el repositorio, sin pasar por un deploy, y el cambio se refleja en la próxima corrida del pipeline. Esto es especialmente relevante porque `ref_marcas` y `ref_canales` son exactamente el tipo de dato que negocio necesita controlar sin depender del ciclo de ingeniería.
+
+---
+
+### `mia_ref.ref_canales`
+
+Mapea nombres de canales tal como vienen en la fuente (`canal_raw`) a un nombre canónico y un grupo de red. Cubre casos donde el mismo canal tiene grafías distintas entre mercados o entre archivos (`ESPN2` vs `ESPN 2`, `ESPN3` vs `ESPN 3`), nombres abreviados (`SPORTV` → `SporTV`), y variantes de un mismo canal (repeticiones, feeds secundarios de Televisa).
+
+| Columna | Tipo | Descripción |
+| --- | --- | --- |
+| `canal_raw` | STRING | Nombre exacto del canal tal como figura en la fuente. Clave de JOIN con los modelos intermediate. |
+| `mercado` | STRING | `BRASIL` o `MEXICO`. El mismo `canal_raw` puede existir en ambos mercados con distinta normalización. |
+| `canal_normalizado` | STRING | Nombre canónico del canal. Ejemplo: `ESPN2` → `ESPN 2`, `SPORTV` → `SporTV`. |
+| `grupo_canal` | STRING | Red o grupo propietario. Ejemplos: `ESPN`, `SporTV`, `Televisa`, `Warner Bros. Discovery`. |
+
+Canales sin entrada en esta tabla usan `canal_raw` como fallback en el modelo.
+
+**Grupos cubiertos:** ESPN, SporTV, Globo, Band, SBT, Record, RedeTV, CNN, Warner Bros. Discovery, STAR, Fox Sports, Televisa, TV Azteca, Televisa Univision, A+E Networks, Walt Disney, Sony Pictures, FX Networks, Milenio, Multimedios, Paramount, Radio Formula.
+
+---
+
+### `mia_ref.ref_marcas`
+
+Mapea el nombre de marca tal como viene en la fuente al nombre comercial correcto. Cubre diferencias de capitalización entre mercados y nombres comerciales que difieren del identificador interno.
+
+| Columna | Tipo | Descripción |
+| --- | --- | --- |
+| `marca_raw` | STRING | Nombre exacto de la marca tal como figura en la fuente. Clave de JOIN con los modelos intermediate. |
+| `marca_comercial` | STRING | Nombre comercial canónico de la marca. |
+
+Marcas sin entrada en esta tabla usan `marca_raw` como fallback en el modelo.

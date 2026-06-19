@@ -13,18 +13,15 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: ['BRASIL']
+              values: ['BRASIL']
       - name: archivo_fuente
         description: Fecha del archivo de origen (ej. '20240831'). Discrimina entre dia1 y dia2.
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: ['20240831', '20240901']
+              values: ['20240831', '20240901']
           - max_distinct_values:
-              arguments:
-                max_values: 2
+              max_values: 2
       - name: pais
         description: Campo fuente. Siempre 'BRASIL'.
       - name: fecha_emision
@@ -88,18 +85,15 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: ['MEXICO']
+              values: ['MEXICO']
       - name: archivo_fuente
         description: Fecha del archivo de origen (ej. '20240830'). Discrimina entre dia1 y dia2.
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: ['20240830', '20240831']
+              values: ['20240830', '20240831']
           - max_distinct_values:
-              arguments:
-                max_values: 2
+              max_values: 2
       - name: fecha_emision
         description: Fecha de emisión en hora local. Extraída de hora_gmt (primeros 10 chars del datetime local).
         tests:
