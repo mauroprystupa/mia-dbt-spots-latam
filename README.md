@@ -2,7 +2,7 @@
 
 Pipeline dbt + BigQuery que unifica datos de spots publicitarios de TV y Radio de **Brasil** y **México** para el producto **MIA**.
 
-Procesa spots desde tablas consolidadas en `mia_raw`, aplica lógica de negocio estandarizada en capas intermedias y expone una tabla de hechos en `mia_marts` lista para dashboards y análisis.
+Procesa spots desde tablas consolidadas en `mia_raw`, aplica lógica de negocio estandarizada en capas intermedias y expone una tabla de consumo en `mia_marts` lista para dashboards y análisis.
 
 ---
 
@@ -88,7 +88,7 @@ stg_mexico ──┘            │
 
 ### Marts
 
-**`spots_latam`** — tabla ancha desnormalizada. Una fila por spot válido con todas las columnas analíticas resueltas inline. Particionada por `fecha_emision`, clustered por `mercado`, `medio`, `segmento_horario`.
+**`spots_latam`** — tabla ancha desnormalizada. Una fila por spot emitido en Brasil o México, incluyendo falsos positivos identificados con `is_valid = FALSE`. Todas las columnas analíticas resueltas inline. Particionada por `fecha_emision`, clustered por `mercado`, `medio`, `segmento_horario`.
 
 ---
 
