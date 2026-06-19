@@ -25,7 +25,7 @@ mia_staging       →  tablas: limpieza, parseo, dedup intra-archivo
       ↓
 mia_intermediate  →  tablas: validación, segmentos, costos, normalización
       ↓
-mia_marts         →  tabla: fct_spots (tabla ancha, consumo directo)
+mia_marts         →  tabla: spots_latam (tabla ancha, consumo directo)
 ```
 
 | Dataset              | Materialización                 | Responsabilidad                                                               |
@@ -33,7 +33,7 @@ mia_marts         →  tabla: fct_spots (tabla ancha, consumo directo)
 | `mia_raw`          | Tabla                            | Fuente consolidada con columna `archivo_fuente` para lineage                |
 | `mia_staging`      | Tabla                            | Parseo, casteos y dedup intra-archivo por mercado                             |
 | `mia_intermediate` | Tabla                            | Unificación, validación de falsos positivos, segmentos, costos, referencias |
-| `mia_marts`        | Tabla (particionada + clustered) | `fct_spots` — tabla ancha desnormalizada, consumo directo                  |
+| `mia_marts`        | Tabla (particionada + clustered) | `spots_latam` — tabla ancha desnormalizada, consumo directo                  |
 
 ---
 
@@ -83,12 +83,12 @@ stg_mexico ──┘            │
                  int_marcas_normalizadas
                           │
                           ↓
-                      fct_spots
+                      spots_latam
 ```
 
 ### Marts
 
-**`fct_spots`** — tabla ancha desnormalizada. Una fila por spot válido con todas las columnas analíticas resueltas inline. Particionada por `fecha_emision`, clustered por `mercado`, `medio`, `segmento_horario`.
+**`spots_latam`** — tabla ancha desnormalizada. Una fila por spot válido con todas las columnas analíticas resueltas inline. Particionada por `fecha_emision`, clustered por `mercado`, `medio`, `segmento_horario`.
 
 ---
 

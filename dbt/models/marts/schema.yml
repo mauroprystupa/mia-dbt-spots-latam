@@ -1,13 +1,14 @@
 version: 2
 
 models:
-  - name: fct_spots
+  - name: spots_latam
     description: >
-      Tabla de hechos principal. Una fila por spot publicitario válido emitido en Brasil o México.
-      Tabla ancha desnormalizada — todas las columnas analíticas resueltas inline, sin necesidad
-      de joins. Lista para consumo directo desde Looker Studio o el MCP Server.
+      Tabla principal de consumo. Una fila por spot publicitario emitido en Brasil o México.
+      Incluye todos los spots — válidos e inválidos — con el flag is_valid para filtrar en query time.
+      Tabla ancha desnormalizada: todas las columnas analíticas resueltas inline, sin necesidad de joins.
       Particionada por fecha_emision y clustered por (mercado, medio, segmento_horario).
-      Solo incluye spots con is_valid = TRUE.
+      Para análisis de inversión: filtrar WHERE is_valid = TRUE.
+      Para auditoría de calidad del proveedor: usar is_valid = FALSE o calcular ratio por mercado/archivo.
     columns:
       - name: mercado
         description: Mercado de emisión. BRASIL o MEXICO.
@@ -103,7 +104,11 @@ models:
           - not_null
 
       - name: is_valid
-        description: Siempre TRUE en esta tabla — el WHERE filtra los falsos positivos en origen.
+        description: >
+          Flag de validez del spot derivado de la comparación entre dia1 y dia2 del proveedor.
+          TRUE = spot confirmado en el audit más reciente (dia2) o spot que cayó de la ventana deslizante (real pero fuera de re-auditoría).
+          FALSE = falso positivo: spot presente en dia1 pero ausente en dia2 dentro del período de solapamiento — el proveedor lo corrigió.
+          Los registros FALSE se preservan para auditoría de calidad. Filtrar WHERE is_valid = TRUE para análisis de inversión.
         tests:
           - not_null
 

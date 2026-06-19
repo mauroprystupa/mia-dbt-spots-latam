@@ -599,7 +599,7 @@ models:
     description: >
       Enriquece cada spot con marca_comercial via JOIN contra mia_ref.ref_marcas.
       Fallback: marca_comercial = marca_raw si no hay match en ref.
-      Es el modelo final de la capa intermediate — alimenta directamente a fct_spots.
+      Es el modelo final de la capa intermediate — alimenta directamente a spots_latam.
     columns:
       - name: mercado
         description: Mercado de emisión. BRASIL o MEXICO.

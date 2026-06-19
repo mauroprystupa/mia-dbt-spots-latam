@@ -33,4 +33,3 @@ SELECT
     updated_at
 
 FROM {{ ref('int_marcas_normalizadas') }}
-WHERE is_valid = TRUE
