@@ -48,7 +48,7 @@ mia_marts         →  tablas: fct_spots + dimensiones
 
 Ambos aplican `DENSE_RANK() OVER (ORDER BY archivo_fuente DESC) <= 2` como guardia explícita contra la acumulación de archivos históricos.
 
-### Intermediate _(en desarrollo)_
+### Intermediate
 
 | Modelo | Responsabilidad |
 |--------|----------------|
@@ -58,6 +58,22 @@ Ambos aplican `DENSE_RANK() OVER (ORDER BY archivo_fuente DESC) <= 2` como guard
 | `int_costos_estimados` | Promedio por `mercado + medio + segmento` cuando `costo_usd_real IS NULL` |
 | `int_canales_normalizados` | JOIN contra `mia_ref.ref_canales` → `canal_normalizado`, `grupo_canal` |
 | `int_marcas_normalizadas` | JOIN contra `mia_ref.ref_marcas` → `marca_comercial` |
+
+---
+
+## Supuestos del pipeline
+
+### `archivo_fuente` como fecha de auditoría
+
+`archivo_fuente` es una string en formato `YYYYMMDD` extraída del **nombre del archivo** cuando el proveedor entrega los datos (ej. `mercado_brasil_20240831.csv` → `'20240831'`). No es la fecha de emisión de los spots.
+
+Esto implica tres supuestos que deben cumplirse para que el pipeline funcione correctamente:
+
+1. **El proveedor nombra sus archivos con la fecha de exportación en formato `YYYYMMDD`.** Si cambia el formato del nombre (ej. `brasil_31-08-2024.csv`), el campo `archivo_fuente` ya no es comparable y el DENSE_RANK elige los archivos incorrectos.
+
+2. **Un archivo `YYYYMMDD` puede contener spots de cualquier fecha de emisión anterior.** El nombre del archivo refleja cuándo el proveedor exportó el snapshot, no qué días cubre. Por eso `fecha_emision` y `archivo_fuente` son columnas independientes y la ventana deslizante opera sobre `archivo_fuente`, no sobre `fecha_emision`.
+
+3. **El orden lexicográfico de `archivo_fuente` coincide con el orden cronológico.** Esto es verdad mientras el formato sea `YYYYMMDD` con ceros a la izquierda: `'20240901' > '20240831'` carácter a carácter. Si el formato fuera `D/M/YYYY`, el orden lexicográfico sería incorrecto y el DENSE_RANK elegiría los archivos equivocados.
 
 ---
 
@@ -119,8 +135,8 @@ dbt test --project-dir dbt
 Los modelos de staging incluyen:
 
 - `not_null` en columnas críticas (`fecha_emision`, `hora_emision`, `canal_raw`, `marca_raw`, `duracion_segundos`)
-- `accepted_values` para `mercado` y `archivo_fuente`
-- `max_distinct_values: 2` en `archivo_fuente` — test custom que falla explícitamente si se cargan más de dos archivos, evitando corrupción silenciosa de la lógica de validación
+- `accepted_values` para `mercado` (`BRASIL` / `MEXICO`)
+- `max_distinct_values: 2` en `archivo_fuente` — test custom que falla explícitamente si se cargan más de dos fechas de auditoría distintas, evitando corrupción silenciosa de la lógica de ventana deslizante
 
 ---
 

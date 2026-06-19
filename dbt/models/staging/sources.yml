@@ -13,12 +13,14 @@ sources:
     tables:
       - name: brasil
         description: >
-          Todos los spots de Brasil. UNION de mercado_brasil_20240831 y
-          mercado_brasil_20240901. Ventana deslizante de 15 dias.
+          Tabla consolidada de spots de Brasil. Acumula archivos de auditoría del proveedor
+          identificados por archivo_fuente (YYYYMMDD). staging filtra las 2 fechas más recientes
+          via DENSE_RANK.
       - name: mexico
         description: >
-          Todos los spots de Mexico. UNION de mercado_mexico_20240830 y
-          mercado_mexico_20240831. Ventana deslizante de 7 dias.
+          Tabla consolidada de spots de México. Acumula archivos de auditoría del proveedor
+          identificados por archivo_fuente (YYYYMMDD). staging filtra las 2 fechas más recientes
+          via DENSE_RANK.
 
   - name: mia_ref
     database: web-nineteen

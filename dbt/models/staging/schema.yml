@@ -3,10 +3,10 @@ version: 2
 models:
   - name: stg_brasil
     description: >
-      Spots de TV y Radio emitidos en Brasil. UNION ALL de los dos archivos diarios
-      (mercado_brasil_20240831 y mercado_brasil_20240901) con columna archivo_fuente
-      para identificar el origen. Dedup intra-archivo por clave natural. El dedup
-      cross-archivo y la columna is_valid se resuelven en int_spots_validados.
+      Spots de TV y Radio emitidos en Brasil. Lee de la tabla consolidada mia_raw.brasil
+      y filtra las 2 fechas de auditoría más recientes via DENSE_RANK sobre archivo_fuente.
+      Dedup intra-archivo por clave natural. El dedup cross-archivo y la columna is_valid
+      se resuelven en int_spots_validados.
     columns:
       - name: mercado
         description: Siempre 'BRASIL'.
@@ -15,17 +15,20 @@ models:
           - accepted_values:
               values: ['BRASIL']
       - name: archivo_fuente
-        description: Fecha del archivo de origen (ej. '20240831'). Discrimina entre dia1 y dia2.
+        description: >
+          Fecha de auditoría del proveedor en formato YYYYMMDD, extraída del nombre del archivo
+          de entrega. Representa cuándo el proveedor exportó el snapshot, no la fecha de emisión
+          de los spots. El orden lexicográfico de YYYYMMDD coincide con el cronológico, por lo
+          que DENSE_RANK DESC selecciona correctamente los audits más recientes.
+          Ver sección Supuestos en README.
         tests:
           - not_null
-          - accepted_values:
-              values: ['20240831', '20240901']
           - max_distinct_values:
               max_values: 2
       - name: pais
         description: Campo fuente. Siempre 'BRASIL'.
       - name: fecha_emision
-        description: Fecha de emisión en hora local. Parseada desde formato DD/M/YYYY.
+        description: Fecha de emisión en hora local. Parseada desde formato DD/MM/YYYY.
         tests:
           - not_null
       - name: hora_emision
@@ -75,9 +78,9 @@ models:
 
   - name: stg_mexico
     description: >
-      Spots de TV y Radio emitidos en México. Lee de mia_raw.mexico (tabla consolidada).
-      Filtra los 2 archivos más recientes con DENSE_RANK. Parsea hora_gmt a hora local
-      extrayendo los primeros 19 caracteres (datetime local sin offset).
+      Spots de TV y Radio emitidos en México. Lee de la tabla consolidada mia_raw.mexico
+      y filtra las 2 fechas de auditoría más recientes via DENSE_RANK sobre archivo_fuente.
+      Parsea hora_gmt a hora local extrayendo los primeros 19 caracteres (datetime local sin offset).
       Dedup intra-archivo por clave natural. Sin costo real — costo_usd_real = NULL.
     columns:
       - name: mercado
@@ -87,11 +90,14 @@ models:
           - accepted_values:
               values: ['MEXICO']
       - name: archivo_fuente
-        description: Fecha del archivo de origen (ej. '20240830'). Discrimina entre dia1 y dia2.
+        description: >
+          Fecha de auditoría del proveedor en formato YYYYMMDD, extraída del nombre del archivo
+          de entrega. Representa cuándo el proveedor exportó el snapshot, no la fecha de emisión
+          de los spots. El orden lexicográfico de YYYYMMDD coincide con el cronológico, por lo
+          que DENSE_RANK DESC selecciona correctamente los audits más recientes.
+          Ver sección Supuestos en README.
         tests:
           - not_null
-          - accepted_values:
-              values: ['20240830', '20240831']
           - max_distinct_values:
               max_values: 2
       - name: fecha_emision
@@ -103,7 +109,10 @@ models:
         tests:
           - not_null
       - name: medio_raw
-        description: Tipo de medio en texto largo. Ej. 'Television - Cable', 'Radio - FM'.
+        description: >
+          Tipo de medio en texto largo tal como viene en la fuente.
+          Valores: 'Televisión de Paga', 'Televisión Abierta Nacional', 'Televisión Abierta Local',
+          'Radio - FM', 'Radio - AM'.
         tests:
           - not_null
       - name: canal_raw

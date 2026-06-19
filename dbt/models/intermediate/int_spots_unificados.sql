@@ -82,6 +82,18 @@ SELECT
     hora_emision,
     medio_raw,
 
+    /*
+      Normalización de medios implementada como CASE WHEN y no como tabla de referencia externa.
+      Razón: los códigos de medio (TC, TV, RD en Brasil / Televisión de Paga, Radio - FM en México)
+      son códigos técnicos del sistema fuente definidos por el proveedor de datos, no por el cliente.
+      Cambian solo cuando el proveedor modifica su sistema — un cambio estructural que requiere
+      intervención de ingeniería de todas formas. Esto los diferencia de ref_marcas y ref_canales,
+      que son datos de negocio que el cliente puede modificar sin tocar el pipeline.
+      El CASE permite además documentar inline el razonamiento técnico de cada mapeo,
+      como el caso de RADIO ITATIAIA BH: estación AM cuyo nombre no contiene el marcador habitual.
+      ELSE devuelve UNMAPPED_{mercado}_{medio_raw} intencionalmente para que el test not_null
+      capture valores no mapeados con un mensaje útil en lugar de fallar silenciosamente con NULL.
+    */
     CASE
         -- Brasil: TC = TV Cable, TV = TV Abierta
         WHEN mercado = 'BRASIL' AND medio_raw = 'TC'  THEN 'TELEVISION_CABLE'
@@ -107,7 +119,7 @@ SELECT
         WHEN mercado = 'MEXICO' AND medio_raw = 'Radio - FM' THEN 'RADIO_FM'
         WHEN mercado = 'MEXICO' AND medio_raw = 'Radio - AM' THEN 'RADIO_AM'
 
-        -- NULL intencionalmente ausente: el test not_null detecta valores de medio_raw no mapeados
+        ELSE CONCAT('UNMAPPED_', mercado, '_', medio_raw)
     END                                                    AS medio,
 
     canal_raw,

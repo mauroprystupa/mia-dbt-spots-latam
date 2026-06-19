@@ -16,7 +16,9 @@ models:
               values: ['BRASIL', 'MEXICO']
 
       - name: archivo_fuente
-        description: Fecha del archivo de origen. Discrimina dia1 vs dia2.
+        description: >
+          Fecha de auditoría del proveedor en formato YYYYMMDD. Discrimina dia1 vs dia2.
+          Ver sección Supuestos en README.
         tests:
           - not_null
 
@@ -80,7 +82,9 @@ models:
               values: ['BRASIL', 'MEXICO']
 
       - name: archivo_fuente
-        description: Fecha del archivo de origen.
+        description: >
+          Fecha de auditoría del proveedor en formato YYYYMMDD. Discrimina dia1 vs dia2.
+          Ver sección Supuestos en README.
         tests:
           - not_null
 
@@ -165,8 +169,9 @@ models:
 
       - name: costo_usd_estimado
         description: >
-          Promedio estimado para el grupo. NULL cuando costo_usd_real IS NOT NULL
-          (no se sobreescribe un dato real en costo_usd_final).
+          Promedio de costo para el grupo (mercado, medio, segmento_horario), calculado siempre
+          via COALESCE de 3 niveles de fallback. No es NULL aunque el spot tenga costo_usd_real.
+          costo_usd_final es quien prioriza el dato real sobre el estimado.
 
       - name: costo_usd_final
         description: >
