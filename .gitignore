@@ -1,0 +1,31 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# dbt
+dbt/target/
+dbt/logs/
+dbt/.user.yml
+dbt/dbt_packages/
+dbt/profiles.yml
+
+# Credenciales
+.env
+*-credentials.json
+*-key.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Fuera del scope del pipeline dbt
+_archive/
+bq_schemas/
+scripts/
+requirements-dev.txt
+
+# Archivos de trabajo del agente
+.claude/

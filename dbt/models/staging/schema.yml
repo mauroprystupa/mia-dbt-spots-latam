@@ -1,0 +1,156 @@
+version: 2
+
+models:
+  - name: stg_brasil
+    description: >
+      Spots de TV y Radio emitidos en Brasil. UNION ALL de los dos archivos diarios
+      (mercado_brasil_20240831 y mercado_brasil_20240901) con columna archivo_fuente
+      para identificar el origen. Dedup intra-archivo por clave natural. El dedup
+      cross-archivo y la columna is_valid se resuelven en int_spots_validados.
+    columns:
+      - name: mercado
+        description: Siempre 'BRASIL'.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['BRASIL']
+      - name: archivo_fuente
+        description: Fecha del archivo de origen (ej. '20240831'). Discrimina entre dia1 y dia2.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['20240831', '20240901']
+          - max_distinct_values:
+              arguments:
+                max_values: 2
+      - name: pais
+        description: Campo fuente. Siempre 'BRASIL'.
+      - name: fecha_emision
+        description: Fecha de emisión en hora local. Parseada desde formato DD/M/YYYY.
+        tests:
+          - not_null
+      - name: hora_emision
+        description: Hora de emisión en hora local (HH:MM:SS).
+        tests:
+          - not_null
+      - name: medio_raw
+        description: Tipo de medio en código fuente. TC=TV Cable, TV=TV Abierta, RD=Radio.
+        tests:
+          - not_null
+      - name: canal_raw
+        description: Nombre del canal o emisora tal como viene en la fuente (campo Emisora).
+        tests:
+          - not_null
+      - name: red
+        description: Red o cadena a la que pertenece la emisora.
+      - name: operador
+        description: Operador de cable o plataforma distribuidora.
+      - name: localidad
+        description: Ciudad o plaza de emisión (campo Plaza).
+      - name: programa
+        description: Programa en el que se emitió el spot. ~80% nulos.
+      - name: spot_tipo
+        description: Tipo de spot (campo Evento). Ej. normal, patrocínio.
+      - name: marca_raw
+        description: Nombre de marca tal como viene en la fuente.
+        tests:
+          - not_null
+      - name: producto
+        description: Línea de producto dentro de la marca.
+      - name: version
+        description: Versión o copy del spot.
+      - name: sector
+        description: Sector de negocio de la marca.
+      - name: subsector
+        description: Subsector de negocio.
+      - name: agencia
+        description: Agencia publicitaria responsable del spot.
+      - name: duracion_segundos
+        description: Duración real emitida en segundos.
+        tests:
+          - not_null
+      - name: costo_usd_real
+        description: Costo del spot en USD. NULL cuando el valor fuente es 0.0 o ausente.
+      - name: es_primera_emision
+        description: TRUE si es la primera emisión del spot. Casteado desde String True/False.
+
+  - name: stg_mexico
+    description: >
+      Spots de TV y Radio emitidos en México. Lee de mia_raw.mexico (tabla consolidada).
+      Filtra los 2 archivos más recientes con DENSE_RANK. Parsea hora_gmt a hora local
+      extrayendo los primeros 19 caracteres (datetime local sin offset).
+      Dedup intra-archivo por clave natural. Sin costo real — costo_usd_real = NULL.
+    columns:
+      - name: mercado
+        description: Siempre 'MEXICO'.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['MEXICO']
+      - name: archivo_fuente
+        description: Fecha del archivo de origen (ej. '20240830'). Discrimina entre dia1 y dia2.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['20240830', '20240831']
+          - max_distinct_values:
+              arguments:
+                max_values: 2
+      - name: fecha_emision
+        description: Fecha de emisión en hora local. Extraída de hora_gmt (primeros 10 chars del datetime local).
+        tests:
+          - not_null
+      - name: hora_emision
+        description: Hora de emisión en hora local. Extraída de hora_gmt (chars 12-19 del datetime local).
+        tests:
+          - not_null
+      - name: medio_raw
+        description: Tipo de medio en texto largo. Ej. 'Television - Cable', 'Radio - FM'.
+        tests:
+          - not_null
+      - name: canal_raw
+        description: Nombre del canal tal como viene en la fuente (campo Canal).
+        tests:
+          - not_null
+      - name: estacion_canal
+        description: Identificación técnica de la estación con frecuencia y código.
+      - name: grupo_estacion
+        description: Grupo al que pertenece la estación. Ej. RADIO FORMULA.
+      - name: grupo_comercial
+        description: Grupo comercial propietario del canal.
+      - name: localidad
+        description: Ciudad o plaza de emisión.
+      - name: cobertura
+        description: Alcance geográfico del spot. NACIONAL o LOCAL.
+      - name: spot_tipo
+        description: Tipo de spot comercial. Ej. SPOT REGULAR, PATROCINIO.
+      - name: marca_raw
+        description: Nombre de marca tal como viene en la fuente.
+        tests:
+          - not_null
+      - name: producto
+        description: Línea de producto dentro de la marca.
+      - name: version
+        description: Versión del spot. Puede contener el texto completo del audio.
+      - name: sector
+        description: Sector de negocio de la marca.
+      - name: subsector
+        description: Subsector de negocio (campo Sub Sector).
+      - name: categoria
+        description: Categoría de producto. Solo disponible en México.
+      - name: duracion_programada_segundos
+        description: Duración planificada del spot en segundos.
+        tests:
+          - not_null
+      - name: segundos_truncados
+        description: Segundos no emitidos por corte del spot.
+      - name: duracion_segundos
+        description: Duración real emitida en segundos. duracion_programada - seg_truncados.
+        tests:
+          - not_null
+      - name: costo_usd_real
+        description: Siempre NULL para México — no hay datos de costo en la fuente.

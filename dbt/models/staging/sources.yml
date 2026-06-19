@@ -1,0 +1,21 @@
+version: 2
+
+sources:
+  - name: mia_raw
+    database: web-nineteen
+    schema: mia_raw
+    description: >
+      Tablas consolidadas de spots de TV y Radio por mercado LATAM.
+      Cada tabla agrega todos los archivos diarios de un mercado bajo la columna
+      archivo_fuente (fecha del archivo, ej. '20240831') y updated_at (timestamp de carga).
+      En produccion el proceso de ingesta hace append por cada archivo nuevo recibido.
+      Nunca se escribe desde dbt.
+    tables:
+      - name: brasil
+        description: >
+          Todos los spots de Brasil. UNION de mercado_brasil_20240831 y
+          mercado_brasil_20240901. Ventana deslizante de 15 dias.
+      - name: mexico
+        description: >
+          Todos los spots de Mexico. UNION de mercado_mexico_20240830 y
+          mercado_mexico_20240831. Ventana deslizante de 7 dias.

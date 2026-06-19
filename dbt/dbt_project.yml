@@ -1,0 +1,41 @@
+name: 'mia_data'
+version: '1.0.0'
+config-version: 2
+profile: 'mia_data'
+
+model-paths: ['models']
+macro-paths: ['macros']
+test-paths: ['tests']
+seed-paths: ['seeds']
+snapshot-paths: ['snapshots']
+analysis-paths: ['analyses']
+docs-paths: ['docs']
+
+target-path: 'target'
+clean-targets:
+  - 'target'
+  - 'dbt_packages'
+
+models:
+  mia_data:
+    +persist_docs:
+      relation: true
+      columns: true
+
+    staging:
+      +materialized: view
+      +schema: mia_staging
+
+    intermediate:
+      +materialized: view
+      +schema: mia_intermediate
+
+    marts:
+      +materialized: table
+      +schema: mia_marts
+      +partition_by:
+        field: fecha_emision
+        data_type: date
+        granularity: day
+      +cluster_by: ['mercado', 'medio', 'segmento_horario']
+      +tags: ['marts']
