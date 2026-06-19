@@ -79,6 +79,12 @@ Esto implica tres supuestos que deben cumplirse para que el pipeline funcione co
 
 3. **El orden lexicográfico de `archivo_fuente` coincide con el orden cronológico.** Esto es verdad mientras el formato sea `YYYYMMDD` con ceros a la izquierda: `'20240901' > '20240831'` carácter a carácter. Si el formato fuera `D/M/YYYY`, el orden lexicográfico sería incorrecto y el DENSE_RANK elegiría los archivos equivocados.
 
+### Decisión de arquitectura — full refresh en la capa intermediate
+
+La capa intermediate requiere un **full refresh del ciclo de auditoría activo** (los 2 valores de `archivo_fuente` más recientes por mercado) en cada ejecución. Esto es una consecuencia directa de la lógica de `is_valid`: determinar si un spot de `dia1` es un falso positivo requiere comparar contra todo `dia2`. La comparación es inherentemente cross-registro y no puede resolverse fila a fila.
+
+A los volúmenes del challenge esto es aceptable. A mayor escala, la optimización correcta sería resolver la comparación cross-archivo en una capa previa a staging — produciendo el flag de re-auditoría una sola vez antes de que los datos entren al pipeline — de modo que staging y en adelante puedan ser modelos incrementales puros.
+
 ---
 
 ## Setup
