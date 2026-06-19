@@ -25,7 +25,7 @@ mia_staging       →  tablas: limpieza, parseo, dedup intra-archivo
       ↓
 mia_intermediate  →  tablas: validación, segmentos, costos, normalización
       ↓
-mia_marts         →  tablas: fct_spots + dimensiones
+mia_marts         →  tabla: fct_spots (tabla ancha, consumo directo)
 ```
 
 | Dataset | Materialización | Responsabilidad |
@@ -33,7 +33,7 @@ mia_marts         →  tablas: fct_spots + dimensiones
 | `mia_raw` | Tabla | Fuente consolidada con columna `archivo_fuente` para lineage |
 | `mia_staging` | Tabla | Parseo, casteos y dedup intra-archivo por mercado |
 | `mia_intermediate` | Tabla | Unificación, validación de falsos positivos, segmentos, costos, referencias |
-| `mia_marts` | Tabla (particionada + clustered) | `fct_spots`, `dim_canales`, `dim_marcas`, `dim_segmentos` |
+| `mia_marts` | Tabla (particionada + clustered) | `fct_spots` — tabla ancha desnormalizada, consumo directo |
 
 ---
 
@@ -58,6 +58,10 @@ Ambos aplican `DENSE_RANK() OVER (ORDER BY archivo_fuente DESC) <= 2` como guard
 | `int_costos_estimados` | Promedio por `mercado + medio + segmento` cuando `costo_usd_real IS NULL` |
 | `int_canales_normalizados` | JOIN contra `mia_ref.ref_canales` → `canal_normalizado`, `grupo_canal` |
 | `int_marcas_normalizadas` | JOIN contra `mia_ref.ref_marcas` → `marca_comercial` |
+
+### Marts
+
+**`fct_spots`** — tabla ancha desnormalizada. Una fila por spot válido con todas las columnas analíticas resueltas inline. Particionada por `fecha_emision`, clustered por `mercado`, `medio`, `segmento_horario`.
 
 ---
 
@@ -127,11 +131,12 @@ dbt test --project-dir dbt
 
 ## Testing
 
-Los modelos de staging incluyen:
+73 tests distribuidos en las tres capas:
 
-- `not_null` en columnas críticas (`fecha_emision`, `hora_emision`, `canal_raw`, `marca_raw`, `duracion_segundos`)
-- `accepted_values` para `mercado` (`BRASIL` / `MEXICO`)
-- `max_distinct_values: 2` en `archivo_fuente` — test custom que falla explícitamente si se cargan más de dos fechas de auditoría distintas, evitando corrupción silenciosa de la lógica de ventana deslizante
+- `not_null` en columnas críticas de staging, intermediate y marts
+- `accepted_values` para `mercado` (`BRASIL` / `MEXICO`), `medio` y `segmento_horario`
+- `max_distinct_values: 2` en `archivo_fuente` (staging) — test custom que falla explícitamente si se cargan más de dos fechas de auditoría, evitando corrupción silenciosa de la lógica de ventana deslizante
+- `not_null` en `costo_usd_final` y `canal_normalizado` y `marca_comercial` — garantizan que los fallbacks de normalización nunca producen NULLs en marts
 
 ---
 

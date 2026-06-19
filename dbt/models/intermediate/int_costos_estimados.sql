@@ -30,7 +30,7 @@ promedios_medio_segmento AS (
 ),
 
 -- Nivel 3: fallback por segmento_horario puro
--- Garantiza no-NULL para cualquier combinación sin referencia (e.g. RADIO_AM en todos los mercados)
+-- Garantiza no-NULL si un segmento no tiene costo real en ningún mercado ni medio.
 promedios_segmento AS (
     SELECT
         segmento_horario,

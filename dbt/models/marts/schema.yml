@@ -1,0 +1,111 @@
+version: 2
+
+models:
+  - name: fct_spots
+    description: >
+      Tabla de hechos principal. Una fila por spot publicitario válido emitido en Brasil o México.
+      Tabla ancha desnormalizada — todas las columnas analíticas resueltas inline, sin necesidad
+      de joins. Lista para consumo directo desde Looker Studio o el MCP Server.
+      Particionada por fecha_emision y clustered por (mercado, medio, segmento_horario).
+      Solo incluye spots con is_valid = TRUE.
+    columns:
+      - name: mercado
+        description: Mercado de emisión. BRASIL o MEXICO.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['BRASIL', 'MEXICO']
+
+      - name: archivo_fuente
+        description: Fecha de auditoría del proveedor en formato YYYYMMDD. Ver sección Supuestos en README.
+        tests:
+          - not_null
+
+      - name: fecha_emision
+        description: Fecha de emisión del spot en hora local.
+        tests:
+          - not_null
+
+      - name: hora_emision
+        description: Hora de emisión del spot en hora local.
+        tests:
+          - not_null
+
+      - name: segmento_horario
+        description: Franja horaria. Primetime (18:00–01:59), Day (08:00–17:59), Greytime (02:00–07:59).
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Primetime', 'Day', 'Greytime']
+
+      - name: medio
+        description: Tipo de medio normalizado. TELEVISION_CABLE, TELEVISION_ABIERTA, RADIO_FM, RADIO_AM.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['TELEVISION_CABLE', 'TELEVISION_ABIERTA', 'RADIO_FM', 'RADIO_AM']
+
+      - name: canal_raw
+        description: Nombre del canal tal como viene en la fuente.
+        tests:
+          - not_null
+
+      - name: canal_normalizado
+        description: Nombre canónico del canal según mia_ref.ref_canales. Nunca NULL (fallback a canal_raw).
+        tests:
+          - not_null
+
+      - name: grupo_canal
+        description: Grupo o red propietaria del canal. NULL si el canal no tiene entrada en ref_canales.
+
+      - name: localidad
+        description: Ciudad o plaza de emisión.
+
+      - name: spot_tipo
+        description: Tipo de spot comercial. Ej. SPOT REGULAR, PATROCINIO.
+
+      - name: marca_raw
+        description: Nombre de marca tal como viene en la fuente.
+        tests:
+          - not_null
+
+      - name: marca_comercial
+        description: Nombre comercial canónico según mia_ref.ref_marcas. Nunca NULL (fallback a marca_raw).
+        tests:
+          - not_null
+
+      - name: producto
+        description: Línea de producto dentro de la marca.
+
+      - name: version
+        description: Versión del spot. En México puede contener el texto completo del audio.
+
+      - name: sector
+        description: Sector de negocio de la marca.
+
+      - name: subsector
+        description: Subsector de negocio.
+
+      - name: duracion_segundos
+        description: Duración real emitida en segundos.
+        tests:
+          - not_null
+
+      - name: costo_usd_real
+        description: Costo del spot en USD. NULL para México y para Brasil cuando ValorDolar=0.
+
+      - name: costo_usd_estimado
+        description: Promedio estimado de costo por fallback de 3 niveles (mercado+medio+segmento, medio+segmento, segmento).
+
+      - name: costo_usd_final
+        description: COALESCE(costo_usd_real, costo_usd_estimado). Nunca NULL. Columna a usar en análisis de inversión.
+        tests:
+          - not_null
+
+      - name: is_valid
+        description: Siempre TRUE en esta tabla — el WHERE filtra los falsos positivos en origen.
+        tests:
+          - not_null
+
+      - name: updated_at
+        description: Timestamp de carga del registro en BigQuery.

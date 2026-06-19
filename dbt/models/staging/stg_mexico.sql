@@ -11,7 +11,7 @@ ultimos_dos AS (
 ),
 
 -- Dedup intra-archivo por clave natural de México.
--- hora_gmt identifica el instante exacto de emisión (incluye timezone offset).
+-- hora_gmt se usa como string opaco en la clave — no se normaliza a UTC en esta etapa.
 deduplicado AS (
     SELECT
         *,
@@ -31,7 +31,8 @@ deduplicado AS (
 
 -- Extraer hora local del campo hora_gmt.
 -- Formato fuente: '2024-08-24 07:27:08 -06:00'
--- Los primeros 19 caracteres son el datetime local; el offset es solo informativo.
+-- El proveedor entrega el campo en hora local de México con el offset como decorador.
+-- Los primeros 19 caracteres son el datetime local; el offset no se procesa.
 parseado AS (
     SELECT
         *,

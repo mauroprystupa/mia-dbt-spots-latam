@@ -32,7 +32,7 @@ con_flags AS (
         mf.min_fecha_dia1,
 
         -- ¿Esta clave natural tiene al menos un registro en dia2?
-        -- Necesario para clasificar registros de dia1 que NO fueron reauditados (is_valid = FALSE)
+        -- Usado en el CASE de is_valid: en_dia2=0 → FALSE (falso positivo), en_dia2=1 → candidato a TRUE.
         MAX(CASE WHEN s.archivo_fuente = ar.archivo_dia2 THEN 1 ELSE 0 END)
             OVER (
                 PARTITION BY
