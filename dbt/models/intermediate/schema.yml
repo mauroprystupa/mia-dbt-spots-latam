@@ -22,6 +22,9 @@ models:
         tests:
           - not_null
 
+      - name: updated_at
+        description: Timestamp de carga del registro en BigQuery.
+
       - name: fecha_emision
         description: Fecha de emisión en hora local.
         tests:
@@ -51,20 +54,76 @@ models:
         tests:
           - not_null
 
+      - name: localidad
+        description: Ciudad o plaza de emisión.
+
+      - name: spot_tipo
+        description: Tipo de spot comercial. Ej. SPOT REGULAR, PATROCINIO.
+
       - name: marca_raw
         description: Nombre de marca tal como viene en la fuente.
         tests:
           - not_null
+
+      - name: producto
+        description: Línea de producto dentro de la marca.
+
+      - name: version
+        description: Versión del spot. En México puede contener el texto completo del audio.
+
+      - name: sector
+        description: Sector de negocio de la marca.
+
+      - name: subsector
+        description: Subsector de negocio.
 
       - name: duracion_segundos
         description: Duración real emitida en segundos.
         tests:
           - not_null
 
+      - name: costo_usd_real
+        description: >
+          Costo del spot en USD. NULL cuando el valor fuente es 0.0 (Brasil) o cuando
+          no hay datos de costo en la fuente (México siempre NULL).
+
+      - name: red
+        description: Red o cadena a la que pertenece la emisora. Solo Brasil; NULL para México.
+
+      - name: operador
+        description: Operador de cable o plataforma distribuidora. Solo Brasil; NULL para México.
+
+      - name: programa
+        description: Programa en el que se emitió el spot. Solo Brasil, ~80% nulos; NULL para México.
+
+      - name: agencia
+        description: Agencia publicitaria responsable del spot. Solo Brasil; NULL para México.
+
+      - name: es_primera_emision
+        description: TRUE si es la primera emisión del spot. Solo Brasil; NULL para México.
+
+      - name: estacion_canal
+        description: Identificación técnica de la estación con frecuencia y código. Solo México; NULL para Brasil.
+
+      - name: grupo_estacion
+        description: Grupo al que pertenece la estación. Solo México; NULL para Brasil.
+
+      - name: grupo_comercial
+        description: Grupo comercial propietario del canal. Solo México; NULL para Brasil.
+
+      - name: cobertura
+        description: Alcance geográfico del spot. NACIONAL o LOCAL. Solo México; NULL para Brasil.
+
+      - name: categoria
+        description: Categoría de producto. Solo México; NULL para Brasil.
+
       - name: duracion_programada_segundos
         description: >
-          Duración planificada en segundos. Solo disponible para México.
-          NULL para Brasil. Se usa en la clave natural de int_spots_validados.
+          Duración planificada del spot en segundos. Solo México; NULL para Brasil.
+          Forma parte de la clave natural de México en int_spots_validados.
+
+      - name: segundos_truncados
+        description: Segundos no emitidos por corte del spot. Solo México; NULL para Brasil.
 
   - name: int_spots_validados
     description: >
@@ -88,6 +147,9 @@ models:
         tests:
           - not_null
 
+      - name: updated_at
+        description: Timestamp de carga del registro en BigQuery.
+
       - name: fecha_emision
         description: Fecha de emisión en hora local.
         tests:
@@ -97,6 +159,9 @@ models:
         description: Hora de emisión en hora local.
         tests:
           - not_null
+
+      - name: medio_raw
+        description: Valor original del campo medio en la fuente. Se preserva para auditoría.
 
       - name: medio
         description: Tipo de medio normalizado al enum canónico.
@@ -110,15 +175,74 @@ models:
         tests:
           - not_null
 
+      - name: localidad
+        description: Ciudad o plaza de emisión.
+
+      - name: spot_tipo
+        description: Tipo de spot comercial.
+
       - name: marca_raw
         description: Nombre de marca tal como viene en la fuente.
         tests:
           - not_null
 
+      - name: producto
+        description: Línea de producto dentro de la marca.
+
+      - name: version
+        description: Versión del spot.
+
+      - name: sector
+        description: Sector de negocio de la marca.
+
+      - name: subsector
+        description: Subsector de negocio.
+
       - name: duracion_segundos
         description: Duración real emitida en segundos.
         tests:
           - not_null
+
+      - name: costo_usd_real
+        description: >
+          Costo del spot en USD. NULL cuando el valor fuente es 0.0 (Brasil) o cuando
+          no hay datos de costo en la fuente (México siempre NULL).
+
+      - name: red
+        description: Red o cadena a la que pertenece la emisora. Solo Brasil; NULL para México.
+
+      - name: operador
+        description: Operador de cable o plataforma distribuidora. Solo Brasil; NULL para México.
+
+      - name: programa
+        description: Programa en el que se emitió el spot. Solo Brasil, ~80% nulos; NULL para México.
+
+      - name: agencia
+        description: Agencia publicitaria responsable del spot. Solo Brasil; NULL para México.
+
+      - name: es_primera_emision
+        description: TRUE si es la primera emisión del spot. Solo Brasil; NULL para México.
+
+      - name: estacion_canal
+        description: Identificación técnica de la estación. Solo México; NULL para Brasil.
+
+      - name: grupo_estacion
+        description: Grupo al que pertenece la estación. Solo México; NULL para Brasil.
+
+      - name: grupo_comercial
+        description: Grupo comercial propietario del canal. Solo México; NULL para Brasil.
+
+      - name: cobertura
+        description: Alcance geográfico del spot. NACIONAL o LOCAL. Solo México; NULL para Brasil.
+
+      - name: categoria
+        description: Categoría de producto. Solo México; NULL para Brasil.
+
+      - name: duracion_programada_segundos
+        description: Duración planificada en segundos. Solo México; NULL para Brasil.
+
+      - name: segundos_truncados
+        description: Segundos no emitidos por corte del spot. Solo México; NULL para Brasil.
 
       - name: is_valid
         description: >
@@ -133,27 +257,110 @@ models:
       Primetime cruza medianoche: 18:00–01:59. Day: 08:00–17:59. Greytime: 02:00–07:59.
     columns:
       - name: mercado
+        description: Mercado de emisión. BRASIL o MEXICO.
         tests:
           - not_null
 
+      - name: archivo_fuente
+        description: Fecha de auditoría del proveedor en formato YYYYMMDD.
+
+      - name: updated_at
+        description: Timestamp de carga del registro en BigQuery.
+
       - name: fecha_emision
+        description: Fecha de emisión en hora local.
         tests:
           - not_null
 
       - name: hora_emision
+        description: Hora de emisión en hora local.
+        tests:
+          - not_null
+
+      - name: medio_raw
+        description: Valor original del campo medio en la fuente.
+
+      - name: medio
+        description: Tipo de medio normalizado al enum canónico.
+
+      - name: canal_raw
+        description: Nombre del canal tal como viene en la fuente.
+
+      - name: localidad
+        description: Ciudad o plaza de emisión.
+
+      - name: spot_tipo
+        description: Tipo de spot comercial.
+
+      - name: marca_raw
+        description: Nombre de marca tal como viene en la fuente.
+
+      - name: producto
+        description: Línea de producto dentro de la marca.
+
+      - name: version
+        description: Versión del spot.
+
+      - name: sector
+        description: Sector de negocio de la marca.
+
+      - name: subsector
+        description: Subsector de negocio.
+
+      - name: duracion_segundos
+        description: Duración real emitida en segundos.
+
+      - name: costo_usd_real
+        description: Costo del spot en USD. NULL para México y para Brasil cuando ValorDolar=0.
+
+      - name: red
+        description: Red o cadena del canal. Solo Brasil; NULL para México.
+
+      - name: operador
+        description: Operador de cable. Solo Brasil; NULL para México.
+
+      - name: programa
+        description: Programa del spot. Solo Brasil; NULL para México.
+
+      - name: agencia
+        description: Agencia publicitaria. Solo Brasil; NULL para México.
+
+      - name: es_primera_emision
+        description: TRUE si es la primera emisión. Solo Brasil; NULL para México.
+
+      - name: estacion_canal
+        description: Identificación técnica de la estación. Solo México; NULL para Brasil.
+
+      - name: grupo_estacion
+        description: Grupo de la estación. Solo México; NULL para Brasil.
+
+      - name: grupo_comercial
+        description: Grupo comercial del canal. Solo México; NULL para Brasil.
+
+      - name: cobertura
+        description: Alcance geográfico. Solo México; NULL para Brasil.
+
+      - name: categoria
+        description: Categoría de producto. Solo México; NULL para Brasil.
+
+      - name: duracion_programada_segundos
+        description: Duración planificada en segundos. Solo México; NULL para Brasil.
+
+      - name: segundos_truncados
+        description: Segundos no emitidos por corte. Solo México; NULL para Brasil.
+
+      - name: is_valid
+        description: >
+          FALSE = falso positivo. TRUE = spot válido para análisis.
         tests:
           - not_null
 
       - name: segmento_horario
-        description: Primetime, Day o Greytime según hora local.
+        description: Franja horaria del spot según hora local. Primetime, Day o Greytime.
         tests:
           - not_null
           - accepted_values:
               values: ['Primetime', 'Day', 'Greytime']
-
-      - name: is_valid
-        tests:
-          - not_null
 
   - name: int_costos_estimados
     description: >
@@ -164,18 +371,111 @@ models:
       Nivel 3 = AVG por segmento_horario (garantía anti-NULL).
     columns:
       - name: mercado
+        description: Mercado de emisión. BRASIL o MEXICO.
         tests:
           - not_null
 
+      - name: archivo_fuente
+        description: Fecha de auditoría del proveedor en formato YYYYMMDD.
+
+      - name: updated_at
+        description: Timestamp de carga del registro en BigQuery.
+
+      - name: fecha_emision
+        description: Fecha de emisión en hora local.
+
+      - name: hora_emision
+        description: Hora de emisión en hora local.
+
+      - name: medio_raw
+        description: Valor original del campo medio en la fuente.
+
+      - name: medio
+        description: Tipo de medio normalizado al enum canónico.
+
+      - name: canal_raw
+        description: Nombre del canal tal como viene en la fuente.
+
+      - name: localidad
+        description: Ciudad o plaza de emisión.
+
+      - name: spot_tipo
+        description: Tipo de spot comercial.
+
+      - name: marca_raw
+        description: Nombre de marca tal como viene en la fuente.
+
+      - name: producto
+        description: Línea de producto dentro de la marca.
+
+      - name: version
+        description: Versión del spot.
+
+      - name: sector
+        description: Sector de negocio de la marca.
+
+      - name: subsector
+        description: Subsector de negocio.
+
+      - name: duracion_segundos
+        description: Duración real emitida en segundos.
+
+      - name: costo_usd_real
+        description: Costo del spot en USD. NULL para México y para Brasil cuando ValorDolar=0.
+
+      - name: red
+        description: Red o cadena del canal. Solo Brasil; NULL para México.
+
+      - name: operador
+        description: Operador de cable. Solo Brasil; NULL para México.
+
+      - name: programa
+        description: Programa del spot. Solo Brasil; NULL para México.
+
+      - name: agencia
+        description: Agencia publicitaria. Solo Brasil; NULL para México.
+
+      - name: es_primera_emision
+        description: TRUE si es la primera emisión. Solo Brasil; NULL para México.
+
+      - name: estacion_canal
+        description: Identificación técnica de la estación. Solo México; NULL para Brasil.
+
+      - name: grupo_estacion
+        description: Grupo de la estación. Solo México; NULL para Brasil.
+
+      - name: grupo_comercial
+        description: Grupo comercial del canal. Solo México; NULL para Brasil.
+
+      - name: cobertura
+        description: Alcance geográfico. Solo México; NULL para Brasil.
+
+      - name: categoria
+        description: Categoría de producto. Solo México; NULL para Brasil.
+
+      - name: duracion_programada_segundos
+        description: Duración planificada en segundos. Solo México; NULL para Brasil.
+
+      - name: segundos_truncados
+        description: Segundos no emitidos por corte. Solo México; NULL para Brasil.
+
+      - name: is_valid
+        description: FALSE = falso positivo. TRUE = spot válido para análisis.
+
+      - name: segmento_horario
+        description: Franja horaria del spot. Primetime, Day o Greytime.
+
       - name: costo_usd_estimado
         description: >
-          Promedio de costo para el grupo (mercado, medio, segmento_horario), calculado siempre
-          via COALESCE de 3 niveles de fallback. No es NULL aunque el spot tenga costo_usd_real.
+          Promedio de costo calculado por fallback de 3 niveles: (mercado, medio, segmento),
+          luego (medio, segmento) cross-mercado, luego solo segmento.
+          Siempre tiene valor (no es NULL aunque el spot tenga costo_usd_real).
           costo_usd_final es quien prioriza el dato real sobre el estimado.
 
       - name: costo_usd_final
         description: >
           COALESCE(costo_usd_real, costo_usd_estimado). Nunca NULL.
+          Es el costo a usar en análisis y dashboards.
         tests:
           - not_null
 
@@ -185,17 +485,115 @@ models:
       Fallback: canal_normalizado = canal_raw si no hay match en ref. grupo_canal puede ser NULL.
     columns:
       - name: mercado
+        description: Mercado de emisión. BRASIL o MEXICO.
         tests:
           - not_null
+
+      - name: archivo_fuente
+        description: Fecha de auditoría del proveedor en formato YYYYMMDD.
+
+      - name: updated_at
+        description: Timestamp de carga del registro en BigQuery.
+
+      - name: fecha_emision
+        description: Fecha de emisión en hora local.
+
+      - name: hora_emision
+        description: Hora de emisión en hora local.
+
+      - name: medio_raw
+        description: Valor original del campo medio en la fuente.
+
+      - name: medio
+        description: Tipo de medio normalizado al enum canónico.
 
       - name: canal_raw
+        description: Nombre del canal tal como viene en la fuente.
         tests:
           - not_null
 
+      - name: localidad
+        description: Ciudad o plaza de emisión.
+
+      - name: spot_tipo
+        description: Tipo de spot comercial.
+
+      - name: marca_raw
+        description: Nombre de marca tal como viene en la fuente.
+
+      - name: producto
+        description: Línea de producto dentro de la marca.
+
+      - name: version
+        description: Versión del spot.
+
+      - name: sector
+        description: Sector de negocio de la marca.
+
+      - name: subsector
+        description: Subsector de negocio.
+
+      - name: duracion_segundos
+        description: Duración real emitida en segundos.
+
+      - name: costo_usd_real
+        description: Costo del spot en USD. NULL para México y para Brasil cuando ValorDolar=0.
+
+      - name: red
+        description: Red o cadena del canal. Solo Brasil; NULL para México.
+
+      - name: operador
+        description: Operador de cable. Solo Brasil; NULL para México.
+
+      - name: programa
+        description: Programa del spot. Solo Brasil; NULL para México.
+
+      - name: agencia
+        description: Agencia publicitaria. Solo Brasil; NULL para México.
+
+      - name: es_primera_emision
+        description: TRUE si es la primera emisión. Solo Brasil; NULL para México.
+
+      - name: estacion_canal
+        description: Identificación técnica de la estación. Solo México; NULL para Brasil.
+
+      - name: grupo_estacion
+        description: Grupo de la estación. Solo México; NULL para Brasil.
+
+      - name: grupo_comercial
+        description: Grupo comercial del canal. Solo México; NULL para Brasil.
+
+      - name: cobertura
+        description: Alcance geográfico. Solo México; NULL para Brasil.
+
+      - name: categoria
+        description: Categoría de producto. Solo México; NULL para Brasil.
+
+      - name: duracion_programada_segundos
+        description: Duración planificada en segundos. Solo México; NULL para Brasil.
+
+      - name: segundos_truncados
+        description: Segundos no emitidos por corte. Solo México; NULL para Brasil.
+
+      - name: is_valid
+        description: FALSE = falso positivo. TRUE = spot válido para análisis.
+
+      - name: segmento_horario
+        description: Franja horaria del spot. Primetime, Day o Greytime.
+
+      - name: costo_usd_estimado
+        description: Promedio de costo estimado por fallback de 3 niveles.
+
+      - name: costo_usd_final
+        description: COALESCE(costo_usd_real, costo_usd_estimado). Nunca NULL.
+
       - name: canal_normalizado
-        description: Nombre normalizado del canal. Nunca NULL (fallback a canal_raw).
+        description: Nombre normalizado del canal según mia_ref.ref_canales. Nunca NULL (fallback a canal_raw).
         tests:
           - not_null
+
+      - name: grupo_canal
+        description: Grupo al que pertenece el canal normalizado. NULL si el canal no tiene entrada en ref_canales.
 
   - name: int_marcas_normalizadas
     description: >
@@ -204,14 +602,115 @@ models:
       Es el modelo final de la capa intermediate — alimenta directamente a fct_spots.
     columns:
       - name: mercado
+        description: Mercado de emisión. BRASIL o MEXICO.
         tests:
           - not_null
+
+      - name: archivo_fuente
+        description: Fecha de auditoría del proveedor en formato YYYYMMDD.
+
+      - name: updated_at
+        description: Timestamp de carga del registro en BigQuery.
+
+      - name: fecha_emision
+        description: Fecha de emisión en hora local.
+
+      - name: hora_emision
+        description: Hora de emisión en hora local.
+
+      - name: medio_raw
+        description: Valor original del campo medio en la fuente.
+
+      - name: medio
+        description: Tipo de medio normalizado al enum canónico.
+
+      - name: canal_raw
+        description: Nombre del canal tal como viene en la fuente.
+
+      - name: localidad
+        description: Ciudad o plaza de emisión.
+
+      - name: spot_tipo
+        description: Tipo de spot comercial.
 
       - name: marca_raw
+        description: Nombre de marca tal como viene en la fuente.
         tests:
           - not_null
 
+      - name: producto
+        description: Línea de producto dentro de la marca.
+
+      - name: version
+        description: Versión del spot.
+
+      - name: sector
+        description: Sector de negocio de la marca.
+
+      - name: subsector
+        description: Subsector de negocio.
+
+      - name: duracion_segundos
+        description: Duración real emitida en segundos.
+
+      - name: costo_usd_real
+        description: Costo del spot en USD. NULL para México y para Brasil cuando ValorDolar=0.
+
+      - name: red
+        description: Red o cadena del canal. Solo Brasil; NULL para México.
+
+      - name: operador
+        description: Operador de cable. Solo Brasil; NULL para México.
+
+      - name: programa
+        description: Programa del spot. Solo Brasil; NULL para México.
+
+      - name: agencia
+        description: Agencia publicitaria. Solo Brasil; NULL para México.
+
+      - name: es_primera_emision
+        description: TRUE si es la primera emisión. Solo Brasil; NULL para México.
+
+      - name: estacion_canal
+        description: Identificación técnica de la estación. Solo México; NULL para Brasil.
+
+      - name: grupo_estacion
+        description: Grupo de la estación. Solo México; NULL para Brasil.
+
+      - name: grupo_comercial
+        description: Grupo comercial del canal. Solo México; NULL para Brasil.
+
+      - name: cobertura
+        description: Alcance geográfico. Solo México; NULL para Brasil.
+
+      - name: categoria
+        description: Categoría de producto. Solo México; NULL para Brasil.
+
+      - name: duracion_programada_segundos
+        description: Duración planificada en segundos. Solo México; NULL para Brasil.
+
+      - name: segundos_truncados
+        description: Segundos no emitidos por corte. Solo México; NULL para Brasil.
+
+      - name: is_valid
+        description: FALSE = falso positivo. TRUE = spot válido para análisis.
+
+      - name: segmento_horario
+        description: Franja horaria del spot. Primetime, Day o Greytime.
+
+      - name: costo_usd_estimado
+        description: Promedio de costo estimado por fallback de 3 niveles.
+
+      - name: costo_usd_final
+        description: COALESCE(costo_usd_real, costo_usd_estimado). Nunca NULL.
+
+      - name: canal_normalizado
+        description: Nombre normalizado del canal. Nunca NULL (fallback a canal_raw).
+
+      - name: grupo_canal
+        description: Grupo al que pertenece el canal normalizado. NULL si no hay match en ref_canales.
+
       - name: marca_comercial
-        description: Nombre comercial de la marca. Nunca NULL (fallback a marca_raw).
+        description: Nombre comercial de la marca según mia_ref.ref_marcas. Nunca NULL (fallback a marca_raw).
         tests:
           - not_null
