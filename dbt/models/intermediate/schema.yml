@@ -469,7 +469,7 @@ models:
         description: >
           Promedio de costo calculado por fallback de 3 niveles: (mercado, medio, segmento),
           luego (medio, segmento) cross-mercado, luego solo segmento.
-          Siempre tiene valor (no es NULL aunque el spot tenga costo_usd_real).
+          Puede ser NULL en el caso extremo de que ningún spot del dataset tenga costo real para ese segmento horario.
           costo_usd_final es quien prioriza el dato real sobre el estimado.
 
       - name: costo_usd_final

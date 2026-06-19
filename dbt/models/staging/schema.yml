@@ -74,7 +74,7 @@ models:
       - name: costo_usd_real
         description: Costo del spot en USD. NULL cuando el valor fuente es 0.0 o ausente.
       - name: es_primera_emision
-        description: TRUE si es la primera emisión del spot. Casteado desde String True/False.
+        description: TRUE/FALSE booleano convertido desde el campo texto via CASE WHEN UPPER(). Valores inesperados resultan en NULL.
 
   - name: stg_mexico
     description: >
@@ -101,11 +101,11 @@ models:
           - max_distinct_values:
               max_values: 2
       - name: fecha_emision
-        description: Fecha de emisión en hora local. Extraída de hora_gmt (primeros 10 chars del datetime local).
+        description: Fecha de emisión en hora local. Obtenida con DATE() sobre el DATETIME local parseado desde hora_gmt.
         tests:
           - not_null
       - name: hora_emision
-        description: Hora de emisión en hora local. Extraída de hora_gmt (chars 12-19 del datetime local).
+        description: Hora de emisión en hora local. Obtenida con TIME() sobre el DATETIME local parseado desde hora_gmt.
         tests:
           - not_null
       - name: medio_raw
@@ -152,7 +152,7 @@ models:
       - name: segundos_truncados
         description: Segundos no emitidos por corte del spot.
       - name: duracion_segundos
-        description: Duración real emitida en segundos. duracion_programada - seg_truncados.
+        description: Duración real emitida en segundos. duracion_programada - COALESCE(seg_truncados, 0). seg_truncados NULL se trata como 0.
         tests:
           - not_null
       - name: costo_usd_real
