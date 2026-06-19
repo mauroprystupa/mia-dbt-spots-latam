@@ -8,11 +8,11 @@ Procesa spots desde tablas consolidadas en `mia_raw`, aplica lógica de negocio 
 
 ## Stack
 
-| Componente | Tecnología |
-|-----------|-----------|
-| Transformaciones | dbt 1.11 (Standard SQL BigQuery) |
-| Base de datos | Google BigQuery |
-| GCP Project | `web-nineteen` · región `us-central1` |
+| Componente       | Tecnología                                 |
+| ---------------- | ------------------------------------------- |
+| Transformaciones | dbt 1.11 (Standard SQL BigQuery)            |
+| Base de datos    | Google BigQuery                             |
+| GCP Project      | `web-nineteen` · región `us-central1` |
 
 ---
 
@@ -28,12 +28,12 @@ mia_intermediate  →  tablas: validación, segmentos, costos, normalización
 mia_marts         →  tabla: fct_spots (tabla ancha, consumo directo)
 ```
 
-| Dataset | Materialización | Responsabilidad |
-|---------|----------------|----------------|
-| `mia_raw` | Tabla | Fuente consolidada con columna `archivo_fuente` para lineage |
-| `mia_staging` | Tabla | Parseo, casteos y dedup intra-archivo por mercado |
-| `mia_intermediate` | Tabla | Unificación, validación de falsos positivos, segmentos, costos, referencias |
-| `mia_marts` | Tabla (particionada + clustered) | `fct_spots` — tabla ancha desnormalizada, consumo directo |
+| Dataset              | Materialización                 | Responsabilidad                                                               |
+| -------------------- | -------------------------------- | ----------------------------------------------------------------------------- |
+| `mia_raw`          | Tabla                            | Fuente consolidada con columna `archivo_fuente` para lineage                |
+| `mia_staging`      | Tabla                            | Parseo, casteos y dedup intra-archivo por mercado                             |
+| `mia_intermediate` | Tabla                            | Unificación, validación de falsos positivos, segmentos, costos, referencias |
+| `mia_marts`        | Tabla (particionada + clustered) | `fct_spots` — tabla ancha desnormalizada, consumo directo                  |
 
 ---
 
@@ -41,23 +41,23 @@ mia_marts         →  tabla: fct_spots (tabla ancha, consumo directo)
 
 ### Staging
 
-| Modelo | Fuente | Notas |
-|--------|--------|-------|
-| `stg_brasil` | `mia_raw.brasil` | Parseo `DD/MM/YYYY`; `ValorDolar = 0` → NULL |
+| Modelo         | Fuente             | Notas                                                           |
+| -------------- | ------------------ | --------------------------------------------------------------- |
+| `stg_brasil` | `mia_raw.brasil` | Parseo `DD/MM/YYYY`; `ValorDolar = 0` → NULL               |
 | `stg_mexico` | `mia_raw.mexico` | Hora local extraída de `Hora GMT`; `costo_usd_real = NULL` |
 
 Ambos aplican `DENSE_RANK() OVER (ORDER BY archivo_fuente DESC) <= 2` como guardia explícita contra la acumulación de archivos históricos.
 
 ### Intermediate
 
-| Modelo | Responsabilidad |
-|--------|----------------|
-| `int_spots_unificados` | UNION ALL ambos mercados · normalización de `medio` al enum canónico |
-| `int_spots_validados` | Dedup cross-archivo · flag `is_valid` por lógica de ventana deslizante |
-| `int_segmentos_horarios` | `segmento_horario` por hora local (Primetime cruza medianoche: 18:00–01:59) |
-| `int_costos_estimados` | Promedio por `mercado + medio + segmento` cuando `costo_usd_real IS NULL` |
-| `int_canales_normalizados` | JOIN contra `mia_ref.ref_canales` → `canal_normalizado`, `grupo_canal` |
-| `int_marcas_normalizadas` | JOIN contra `mia_ref.ref_marcas` → `marca_comercial` |
+| Modelo                       | Responsabilidad                                                                |
+| ---------------------------- | ------------------------------------------------------------------------------ |
+| `int_spots_unificados`     | UNION ALL ambos mercados · normalización de `medio` al enum canónico      |
+| `int_spots_validados`      | Dedup cross-archivo · flag `is_valid` por lógica de ventana deslizante     |
+| `int_segmentos_horarios`   | `segmento_horario` por hora local (Primetime cruza medianoche: 18:00–01:59) |
+| `int_costos_estimados`     | Promedio por `mercado + medio + segmento` cuando `costo_usd_real IS NULL`  |
+| `int_canales_normalizados` | JOIN contra `mia_ref.ref_canales` → `canal_normalizado`, `grupo_canal`  |
+| `int_marcas_normalizadas`  | JOIN contra `mia_ref.ref_marcas` → `marca_comercial`                      |
 
 ### Marts
 
@@ -74,9 +74,7 @@ Ambos aplican `DENSE_RANK() OVER (ORDER BY archivo_fuente DESC) <= 2` como guard
 Esto implica tres supuestos que deben cumplirse para que el pipeline funcione correctamente:
 
 1. **El proveedor nombra sus archivos con la fecha de exportación en formato `YYYYMMDD`.** Si cambia el formato del nombre (ej. `brasil_31-08-2024.csv`), el campo `archivo_fuente` ya no es comparable y el DENSE_RANK elige los archivos incorrectos.
-
 2. **Cada archivo cubre una ventana de N días consecutivos inmediatamente anteriores a su fecha de nombre.** El archivo `20240831` contiene spots de los N días previos al 31 de agosto; el archivo `20240901` contiene spots de los N días previos al 1 de septiembre. Ambos se solapan en N-1 días, lo que permite detectar qué spots de dia1 no fueron re-auditados en dia2 (falsos positivos). Si un archivo llegara con datos de un período sin solapamiento con el archivo anterior, los spots de dia1 no tendrían matches en dia2 y serían marcados incorrectamente como `is_valid = FALSE`.
-
 3. **El orden lexicográfico de `archivo_fuente` coincide con el orden cronológico.** Esto es verdad mientras el formato sea `YYYYMMDD` con ceros a la izquierda: `'20240901' > '20240831'` carácter a carácter. Si el formato fuera `D/M/YYYY`, el orden lexicográfico sería incorrecto y el DENSE_RANK elegiría los archivos equivocados.
 
 ### Decisión de arquitectura — full refresh en la capa intermediate
@@ -84,6 +82,15 @@ Esto implica tres supuestos que deben cumplirse para que el pipeline funcione co
 La capa intermediate requiere un **full refresh del ciclo de auditoría activo** (los 2 valores de `archivo_fuente` más recientes por mercado) en cada ejecución. Esto es una consecuencia directa de la lógica de `is_valid`: determinar si un spot de `dia1` es un falso positivo requiere comparar contra todo `dia2`. La comparación es inherentemente cross-registro y no puede resolverse fila a fila.
 
 A los volúmenes del challenge esto es aceptable. A mayor escala, la optimización correcta sería resolver la comparación cross-archivo en una capa previa a staging — produciendo el flag de re-auditoría una sola vez antes de que los datos entren al pipeline — de modo que staging y en adelante puedan ser modelos incrementales puros.
+
+### Decisión de arquitectura — pipeline de enriquecimiento en 6 modelos
+
+La capa intermediate está implementada como una cadena de 6 modelos independientes. Esta es una decisión de arquitectura, no deuda técnica. En esta etapa de inmadurez del pipeline, se priorizó la capacidad de debuggear la lógica de negocio con tests intermedios que permitan identificar inconsistencias rápidamente y documentarlas. A medida que el pipeline cobre madurez, los modelos se irán unificando y los tests intermedios serán reemplazados por validaciones en capas más tempranas.
+
+**Deudas asumidas conscientemente:**
+
+- _¿Qué pasa si un analista quiere consumir `mia_intermediate`?_ Ningún analista debería hacerlo — es una capa exclusiva del pipeline. En caso de necesidad, la documentación de cada modelo indica qué columnas agrega y cuál es el modelo final completo.
+- _Materializar 6 modelos implica mayor consumo de storage._ Correcto. En esta etapa el foco está en el entendimiento de las reglas de negocio, la calidad de los datos y la resolución rápida de fallos. A medida que el pipeline madure, esa deuda se sanea consolidando modelos.
 
 ---
 
@@ -161,12 +168,12 @@ En un producto como MIA, donde los clientes pueden pedir que una marca cambie de
 
 Mapea nombres de canales tal como vienen en la fuente (`canal_raw`) a un nombre canónico y un grupo de red. Cubre casos donde el mismo canal tiene grafías distintas entre mercados o entre archivos (`ESPN2` vs `ESPN 2`, `ESPN3` vs `ESPN 3`), nombres abreviados (`SPORTV` → `SporTV`), y variantes de un mismo canal (repeticiones, feeds secundarios de Televisa).
 
-| Columna | Tipo | Descripción |
-| --- | --- | --- |
-| `canal_raw` | STRING | Nombre exacto del canal tal como figura en la fuente. Clave de JOIN con los modelos intermediate. |
-| `mercado` | STRING | `BRASIL` o `MEXICO`. El mismo `canal_raw` puede existir en ambos mercados con distinta normalización. |
-| `canal_normalizado` | STRING | Nombre canónico del canal. Ejemplo: `ESPN2` → `ESPN 2`, `SPORTV` → `SporTV`. |
-| `grupo_canal` | STRING | Red o grupo propietario. Ejemplos: `ESPN`, `SporTV`, `Televisa`, `Warner Bros. Discovery`. |
+| Columna               | Tipo   | Descripción                                                                                                 |
+| --------------------- | ------ | ------------------------------------------------------------------------------------------------------------ |
+| `canal_raw`         | STRING | Nombre exacto del canal tal como figura en la fuente. Clave de JOIN con los modelos intermediate.            |
+| `mercado`           | STRING | `BRASIL` o `MEXICO`. El mismo `canal_raw` puede existir en ambos mercados con distinta normalización. |
+| `canal_normalizado` | STRING | Nombre canónico del canal. Ejemplo:`ESPN2` → `ESPN 2`, `SPORTV` → `SporTV`.                       |
+| `grupo_canal`       | STRING | Red o grupo propietario. Ejemplos:`ESPN`, `SporTV`, `Televisa`, `Warner Bros. Discovery`.            |
 
 Canales sin entrada en esta tabla usan `canal_raw` como fallback en el modelo.
 
@@ -178,9 +185,9 @@ Canales sin entrada en esta tabla usan `canal_raw` como fallback en el modelo.
 
 Mapea el nombre de marca tal como viene en la fuente al nombre comercial correcto. Cubre diferencias de capitalización entre mercados y nombres comerciales que difieren del identificador interno.
 
-| Columna | Tipo | Descripción |
-| --- | --- | --- |
-| `marca_raw` | STRING | Nombre exacto de la marca tal como figura en la fuente. Clave de JOIN con los modelos intermediate. |
-| `marca_comercial` | STRING | Nombre comercial canónico de la marca. |
+| Columna             | Tipo   | Descripción                                                                                        |
+| ------------------- | ------ | --------------------------------------------------------------------------------------------------- |
+| `marca_raw`       | STRING | Nombre exacto de la marca tal como figura en la fuente. Clave de JOIN con los modelos intermediate. |
+| `marca_comercial` | STRING | Nombre comercial canónico de la marca.                                                             |
 
 Marcas sin entrada en esta tabla usan `marca_raw` como fallback en el modelo.
