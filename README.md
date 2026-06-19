@@ -59,6 +59,33 @@ Ambos aplican `DENSE_RANK() OVER (ORDER BY archivo_fuente DESC) <= 2` como guard
 | `int_canales_normalizados` | JOIN contra `mia_ref.ref_canales` → `canal_normalizado`, `grupo_canal`  |
 | `int_marcas_normalizadas`  | JOIN contra `mia_ref.ref_marcas` → `marca_comercial`                      |
 
+El orden de ejecución lo determina dbt automáticamente a partir del DAG que construye leyendo los `{{ ref() }}` de cada modelo:
+
+```text
+stg_brasil ──┐
+             ├──→ int_spots_unificados
+stg_mexico ──┘            │
+                          ↓
+                 int_spots_validados
+                          │
+                          ↓
+                 int_segmentos_horarios
+                          │
+                          ↓
+                 int_costos_estimados
+                          │
+          ref_canales ────┤
+                          ↓
+                 int_canales_normalizados
+                          │
+           ref_marcas ────┤
+                          ↓
+                 int_marcas_normalizadas
+                          │
+                          ↓
+                      fct_spots
+```
+
 ### Marts
 
 **`fct_spots`** — tabla ancha desnormalizada. Una fila por spot válido con todas las columnas analíticas resueltas inline. Particionada por `fecha_emision`, clustered por `mercado`, `medio`, `segmento_horario`.
