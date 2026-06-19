@@ -42,7 +42,7 @@ con_flags AS (
                     s.canal_raw,
                     s.marca_raw,
                     COALESCE(s.version, ''),
-                    COALESCE(s.duracion_programada_segundos, s.duracion_segundos)
+                    CASE WHEN s.mercado = 'MEXICO' THEN s.duracion_programada_segundos ELSE s.duracion_segundos END
             ) AS en_dia2,
 
         -- Dedup cross-archivo: dia2 gana.
@@ -55,7 +55,7 @@ con_flags AS (
                 s.canal_raw,
                 s.marca_raw,
                 COALESCE(s.version, ''),
-                COALESCE(s.duracion_programada_segundos, s.duracion_segundos)
+                CASE WHEN s.mercado = 'MEXICO' THEN s.duracion_programada_segundos ELSE s.duracion_segundos END
             ORDER BY
                 CASE WHEN s.archivo_fuente = ar.archivo_dia2 THEN 1 ELSE 2 END
         ) AS rn

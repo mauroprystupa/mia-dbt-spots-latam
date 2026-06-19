@@ -23,11 +23,11 @@ models:
       columns: true
 
     staging:
-      +materialized: view
+      +materialized: table
       +schema: mia_staging
 
     intermediate:
-      +materialized: view
+      +materialized: table
       +schema: mia_intermediate
 
     marts:
