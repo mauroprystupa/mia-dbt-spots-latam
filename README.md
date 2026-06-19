@@ -104,6 +104,14 @@ Esto implica tres supuestos que deben cumplirse para que el pipeline funcione co
 2. **Cada archivo cubre una ventana de N días consecutivos inmediatamente anteriores a su fecha de nombre.** El archivo `20240831` contiene spots de los N días previos al 31 de agosto; el archivo `20240901` contiene spots de los N días previos al 1 de septiembre. Ambos se solapan en N-1 días, lo que permite detectar qué spots de dia1 no fueron re-auditados en dia2 (falsos positivos). Si un archivo llegara con datos de un período sin solapamiento con el archivo anterior, los spots de dia1 no tendrían matches en dia2 y serían marcados incorrectamente como `is_valid = FALSE`.
 3. **El orden lexicográfico de `archivo_fuente` coincide con el orden cronológico.** Esto es verdad mientras el formato sea `YYYYMMDD` con ceros a la izquierda: `'20240901' > '20240831'` carácter a carácter. Si el formato fuera `D/M/YYYY`, el orden lexicográfico sería incorrecto y el DENSE_RANK elegiría los archivos equivocados.
 
+### Supuesto de costo estimado para México
+
+México no tiene datos de costo en la fuente — el campo equivalente a `ValorDolar` de Brasil no existe. El modelo `int_costos_estimados` imputa el costo de los spots mexicanos usando el promedio de Brasil por `(medio, segmento_horario)`, sin distinción de mercado.
+
+Esto asume que **el costo de un spot de un tipo de medio y franja horaria determinada es comparable entre Brasil y México**. Es un supuesto fuerte: ambos mercados tienen tamaños, estructuras de precios y monedas distintas. El estimado de México hereda el sesgo del mercado brasileño.
+
+Para producción, la solución correcta es obtener datos de costo reales para México o construir un factor de ajuste por mercado. Mientras eso no esté disponible, `costo_usd_estimado` para México debe interpretarse como una aproximación de orden de magnitud, no como un valor preciso.
+
 ### Decisión de arquitectura — full refresh en la capa intermediate
 
 La capa intermediate requiere un **full refresh del ciclo de auditoría activo** (los 2 valores de `archivo_fuente` más recientes por mercado) en cada ejecución. Esto es una consecuencia directa de la lógica de `is_valid`: determinar si un spot de `dia1` es un falso positivo requiere comparar contra todo `dia2`. La comparación es inherentemente cross-registro y no puede resolverse fila a fila.
