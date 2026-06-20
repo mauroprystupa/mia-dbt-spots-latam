@@ -10,6 +10,8 @@ Procesa spots desde tablas consolidadas en `mia_raw`, aplica lógica de negocio 
 
 Pipeline dbt sobre BigQuery que unifica spots de TV y Radio de Brasil y México en una única tabla de consumo (`spots_latam`). El proceso cubre limpieza y parseo por mercado en staging, y aplica en capas intermediate: unificación, detección de falsos positivos, segmentos horarios, estimación de costos y normalización de canales y marcas vía tablas de referencia externas. Los principales desafíos fueron: la detección de falsos positivos entre archivos de distintas fechas de auditoría (resuelto con lógica de ventana deslizante y flag `is_valid`), el parseo de zona horaria en México (resuelto extrayendo los primeros 19 caracteres del campo `Hora GMT`), y la ausencia de costos reales para México (resuelto con estimación por promedio de Brasil — supuesto documentado explícitamente). La tabla final incluye todos los registros con el flag de validez para que el consumidor decida el filtro. Como análisis adicional, se construyó un dashboard interactivo standalone que evidencia la alta concentración del mercado en apuestas deportivas y streaming, y la dominancia del grupo ESPN en el inventario disponible.
 
+Muestra de la tabla final: [`dashboard/spot_latam.csv`](dashboard/spot_latam.csv)
+
 ---
 
 ## Contenido del repositorio

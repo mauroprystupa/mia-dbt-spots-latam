@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: mia_raw
-    database: web-nineteen
+    database: "{{ env_var('GCP_PROJECT') }}"
     schema: mia_raw
     description: >
       Tablas consolidadas de spots de TV y Radio por mercado LATAM.
@@ -23,7 +23,7 @@ sources:
           via DENSE_RANK.
 
   - name: mia_ref
-    database: web-nineteen
+    database: "{{ env_var('GCP_PROJECT') }}"
     schema: mia_ref
     description: >
       Tablas de referencia gestionadas fuera del pipeline dbt.
