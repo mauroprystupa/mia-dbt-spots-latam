@@ -6,13 +6,27 @@ Procesa spots desde tablas consolidadas en `mia_raw`, aplica lógica de negocio 
 
 ---
 
+## Informe Final
+
+Pipeline dbt sobre BigQuery que unifica spots de TV y Radio de Brasil y México en una única tabla de consumo (`spots_latam`). El proceso cubre limpieza y parseo por mercado en staging, y aplica en capas intermediate: unificación, detección de falsos positivos, segmentos horarios, estimación de costos y normalización de canales y marcas vía tablas de referencia externas. Los principales desafíos fueron: la detección de falsos positivos entre archivos de distintas fechas de auditoría (resuelto con lógica de ventana deslizante y flag `is_valid`), el parseo de zona horaria en México (resuelto extrayendo los primeros 19 caracteres del campo `Hora GMT`), y la ausencia de costos reales para México (resuelto con estimación por promedio de Brasil — supuesto documentado explícitamente). La tabla final incluye todos los registros con el flag de validez para que el consumidor decida el filtro. Como análisis adicional, se construyó un dashboard interactivo standalone que evidencia la alta concentración del mercado en apuestas deportivas y streaming, y la dominancia del grupo ESPN en el inventario disponible.
+
+---
+
+## Contenido del repositorio
+
+- [`dbt/`](dbt/) — proyecto dbt completo: modelos de staging, intermediate y marts, macros, tests y configuración de conexión a BigQuery.
+- [`dashboard/`](dashboard/) — dashboard standalone HTML que consume `spots_latam`. Incluye [instrucciones de uso](dashboard/README.md) y un [análisis del período](dashboard/ANALISIS.md).
+- [`.env.example`](.env.example) — variables de entorno requeridas para conectarse a GCP.
+
+---
+
 ## Stack
 
-| Componente       | Tecnología                                 |
-| ---------------- | ------------------------------------------- |
-| Transformaciones | dbt 1.11 (Standard SQL BigQuery)            |
-| Base de datos    | Google BigQuery                             |
-| GCP Project      | `web-nineteen` · región `us-central1` |
+| Componente       | Tecnología                      |
+| ---------------- | -------------------------------- |
+| Transformaciones | dbt 1.11 (Standard SQL BigQuery) |
+| Base de datos    | Google BigQuery                  |
+| GCP Project      | xxx· región `us-central1`    |
 
 ---
 
@@ -33,7 +47,7 @@ mia_marts         →  tabla: spots_latam (tabla ancha, consumo directo)
 | `mia_raw`          | Tabla                            | Fuente consolidada con columna `archivo_fuente` para lineage                |
 | `mia_staging`      | Tabla                            | Parseo, casteos y dedup intra-archivo por mercado                             |
 | `mia_intermediate` | Tabla                            | Unificación, validación de falsos positivos, segmentos, costos, referencias |
-| `mia_marts`        | Tabla (particionada + clustered) | `spots_latam` — tabla ancha desnormalizada, consumo directo                  |
+| `mia_marts`        | Tabla (particionada + clustered) | `spots_latam` — tabla ancha desnormalizada, consumo directo                |
 
 ---
 
@@ -88,7 +102,7 @@ stg_mexico ──┘            │
 
 ### Marts
 
-**`spots_latam`** — tabla ancha desnormalizada. Una fila por spot emitido en Brasil o México, incluyendo falsos positivos identificados con `is_valid = FALSE`. Todas las columnas analíticas resueltas inline. Particionada por `fecha_emision`, clustered por `mercado`, `medio`, `segmento_horario`.
+**`spots_latam`** — tabla ancha desnormalizada. Una fila por spot emitido en Brasil o México, incluyendo falsos positivos identificados con `is_valid = FALSE`. Todas las columnas analíticas resueltas inline. Particionada por `fecha_emision`, clustered por `mercado`, `medio`, `segmento_horario`. Muestra del período disponible en [`dashboard/spot_latam.csv`](dashboard/spot_latam.csv).
 
 ---
 
@@ -147,18 +161,16 @@ dbt deps --project-dir dbt
 
 Crear `dbt/profiles.yml` (no se versiona):
 
-```yaml
 mia_data:
   target: dev
   outputs:
     dev:
       type: bigquery
       method: oauth
-      project: web-nineteen
+      project: xxx
       dataset: mia_staging
       location: us-central1
       threads: 4
-```
 
 Verificar:
 

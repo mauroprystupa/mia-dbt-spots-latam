@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIA — Spots LATAM</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Google Sans', Arial, sans-serif; background: #f1f3f4; color: #202124; display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { width: 56px; background: #fff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 8px; flex-shrink: 0; }
+  .sidebar-logo { font-weight: 700; font-size: 13px; color: #1a73e8; letter-spacing: -0.5px; padding: 8px 0 16px; }
+  .sidebar-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #5f6368; font-size: 18px; transition: background 0.15s; }
+  .sidebar-icon:hover { background: #f1f3f4; }
+  .sidebar-icon.active { background: #e8f0fe; color: #1a73e8; }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Header */
+  .header { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 0 24px; display: flex; align-items: center; gap: 24px; height: 52px; flex-shrink: 0; }
+  .header-title { font-size: 15px; font-weight: 600; color: #202124; }
+  .header-tabs { display: flex; gap: 4px; margin-left: 8px; }
+  .tab { padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; color: #5f6368; border: none; background: transparent; font-family: inherit; transition: background 0.15s; }
+  .tab.active { background: #e8f0fe; color: #1a73e8; font-weight: 500; }
+  .tab:hover:not(.active) { background: #f1f3f4; }
+
+  /* Filters */
+  .filters { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 8px 24px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; flex-shrink: 0; }
+  .filter-row-break { flex-basis: 100%; height: 1px; background: #f1f3f4; margin: 2px -24px; }
+  .filter-label { font-size: 12px; color: #5f6368; font-weight: 500; }
+  .filter-group { display: flex; gap: 6px; align-items: center; }
+  .filter-btn { padding: 4px 12px; border-radius: 16px; border: 1px solid #dadce0; background: #fff; font-size: 12px; cursor: pointer; color: #3c4043; font-family: inherit; transition: all 0.15s; white-space: nowrap; }
+  .filter-btn.active { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+  .filter-btn:hover:not(.active) { background: #f8f9fa; border-color: #aaa; }
+  .filter-sep { width: 1px; height: 20px; background: #e0e0e0; margin: 0 4px; }
+
+  /* Content */
+  .content { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* Scorecards */
+  .scorecards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .scorecard { background: #fff; border-radius: 10px; padding: 16px 18px; border: 1px solid #e0e0e0; }
+  .scorecard-label { font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .scorecard-value { font-size: 22px; font-weight: 600; color: #202124; }
+  .scorecard-sub { font-size: 11px; color: #80868b; margin-top: 4px; }
+
+  /* Charts row */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .charts-row-3 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .chart-card { background: #fff; border-radius: 10px; padding: 18px 20px; border: 1px solid #e0e0e0; }
+  .chart-title { font-size: 13px; font-weight: 600; color: #202124; margin-bottom: 14px; }
+
+  /* Canvas */
+  canvas { display: block; }
+
+  /* Loading / Error */
+  .loading { display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; gap: 12px; color: #5f6368; font-size: 14px; }
+  .spinner { width: 32px; height: 32px; border: 3px solid #e0e0e0; border-top-color: #1a73e8; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-msg { background: #fff; border-radius: 10px; padding: 24px; border: 1px solid #e0e0e0; text-align: center; color: #5f6368; font-size: 14px; line-height: 1.6; }
+  .error-msg strong { color: #d93025; display: block; margin-bottom: 8px; }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #5f6368; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* FP quality row */
+  .fp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .fp-card { background: #fff; border-radius: 10px; padding: 14px 18px; border: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: space-between; }
+  .fp-label { font-size: 12px; color: #5f6368; }
+  .fp-pct { font-size: 20px; font-weight: 600; }
+  .fp-pct.ok  { color: #34a853; }
+  .fp-pct.bad { color: #d93025; }
+  .fp-sub { font-size: 11px; color: #80868b; margin-top: 2px; }
+
+  /* Heatmap */
+  .heatmap-grid { display: grid; gap: 3px; }
+  .hm-cell { border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: rgba(255,255,255,0.85); font-weight: 500; cursor: default; transition: opacity 0.15s; }
+  .hm-cell:hover { opacity: 0.75; }
+  .hm-axis { font-size: 10px; color: #9aa0a6; text-align: center; }
+
+  /* Horizontal bar chart */
+  .hbar-list { display: flex; flex-direction: column; gap: 8px; }
+  .hbar-item { display: flex; align-items: center; gap: 8px; }
+  .hbar-label { font-size: 11px; color: #3c4043; width: 140px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hbar-track { flex: 1; height: 18px; background: #f1f3f4; border-radius: 3px; overflow: hidden; }
+  .hbar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+  .hbar-val { font-size: 11px; color: #5f6368; width: 70px; text-align: right; flex-shrink: 0; }
+
+  /* Tooltip */
+  #tooltip { position: fixed; pointer-events: none; background: rgba(32,33,36,0.88); color: #fff; font-size: 12px; padding: 7px 11px; border-radius: 6px; line-height: 1.6; display: none; z-index: 999; max-width: 200px; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div id="tooltip"></div>
+<nav class="sidebar">
+  <div class="sidebar-logo">MIA</div>
+  <div class="sidebar-icon active">📊</div>
+  <div class="sidebar-icon">📺</div>
+  <div class="sidebar-icon">🎙️</div>
+  <div class="sidebar-icon">📈</div>
+  <div class="sidebar-icon" style="margin-top:auto">⚙️</div>
+</nav>
+
+<!-- Main -->
+<div class="main">
+  <div class="header">
+    <span class="header-title">Spots LATAM</span>
+    <div class="header-tabs">
+      <button class="tab active">Summary</button>
+      <button class="tab">TV / Radio</button>
+      <button class="tab">Marcas</button>
+    </div>
+  </div>
+
+  <div class="filters">
+    <!-- Fila 1 -->
+    <span class="filter-label">Mercado</span>
+    <div class="filter-group" id="filter-mercado">
+      <button class="filter-btn active" data-val="ALL">Todos</button>
+      <button class="filter-btn" data-val="BRASIL">Brasil</button>
+      <button class="filter-btn" data-val="MEXICO">México</button>
+    </div>
+    <div class="filter-sep"></div>
+    <span class="filter-label">Medio</span>
+    <div class="filter-group" id="filter-medio">
+      <button class="filter-btn active" data-val="ALL">Todos</button>
+      <button class="filter-btn" data-val="TELEVISION_CABLE">TV Cable</button>
+      <button class="filter-btn" data-val="TELEVISION_ABIERTA">TV Abierta</button>
+      <button class="filter-btn" data-val="RADIO_FM">Radio FM</button>
+      <button class="filter-btn" data-val="RADIO_AM">Radio AM</button>
+    </div>
+    <div class="filter-sep"></div>
+    <span class="filter-label">Segmento</span>
+    <div class="filter-group" id="filter-segmento">
+      <button class="filter-btn active" data-val="ALL">Todos</button>
+      <button class="filter-btn" data-val="Primetime">Primetime</button>
+      <button class="filter-btn" data-val="Day">Day</button>
+      <button class="filter-btn" data-val="Greytime">Greytime</button>
+    </div>
+    <div class="filter-sep"></div>
+    <span class="filter-label">Validez</span>
+    <div class="filter-group" id="filter-isValid">
+      <button class="filter-btn" data-val="ALL">Todos</button>
+      <button class="filter-btn active" data-val="true">Válidos</button>
+      <button class="filter-btn" data-val="false">Falsos positivos</button>
+    </div>
+
+    <!-- Separador de fila -->
+    <div class="filter-row-break"></div>
+
+    <!-- Fila 2 -->
+    <span class="filter-label">Duración</span>
+    <div class="filter-group" id="filter-duracion">
+      <button class="filter-btn active" data-val="ALL">Todos</button>
+      <button class="filter-btn" data-val="0–15s">0–15s</button>
+      <button class="filter-btn" data-val="16–30s">16–30s</button>
+      <button class="filter-btn" data-val="31–45s">31–45s</button>
+      <button class="filter-btn" data-val="46–60s">46–60s</button>
+      <button class="filter-btn" data-val="+60s">+60s</button>
+    </div>
+    <div style="flex:1"></div>
+    <button id="btn-reset" style="padding:5px 14px;border-radius:16px;border:1px solid #d93025;background:#fff;color:#d93025;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;transition:all 0.15s;" onmouseover="this.style.background='#fce8e6'" onmouseout="this.style.background='#fff'">✕ Limpiar</button>
+  </div>
+
+  <div class="content" id="content">
+    <div class="loading"><div class="spinner"></div><span>Cargando datos…</span></div>
+  </div>
+</div>
+
+<script>
+// ─── Tooltip ──────────────────────────────────────────────────────────────────
+const tip = document.getElementById('tooltip');
+const canvasHits = new WeakMap(); // canvas → [{x,y,w,h,html}]
+
+function showTip(e, html) {
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  moveTip(e);
+}
+function moveTip(e) {
+  const x = e.clientX + 14, y = e.clientY - 10;
+  tip.style.left = (x + tip.offsetWidth > window.innerWidth ? x - tip.offsetWidth - 20 : x) + 'px';
+  tip.style.top  = (y + tip.offsetHeight > window.innerHeight ? y - tip.offsetHeight : y) + 'px';
+}
+function hideTip() { tip.style.display = 'none'; }
+
+function setFilter(key, val) {
+  filters[key] = val;
+  document.querySelectorAll(`#filter-${key} .filter-btn`).forEach(b =>
+    b.classList.toggle('active', b.dataset.val === val)
+  );
+}
+
+function registerHits(canvas, hits) {
+  canvasHits.set(canvas, hits);
+  canvas.onmousemove = e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const hit = (canvasHits.get(canvas) || []).find(h => mx >= h.x && mx <= h.x + h.w && my >= h.y && my <= h.y + h.h);
+    if (hit) { showTip(e, hit.html); canvas.style.cursor = 'pointer'; }
+    else      { hideTip(); canvas.style.cursor = 'default'; }
+  };
+  canvas.onmouseleave = hideTip;
+  canvas.onclick = e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const hit = (canvasHits.get(canvas) || []).find(h => mx >= h.x && mx <= h.x + h.w && my >= h.y && my <= h.y + h.h);
+    if (hit && hit.onClick) { hit.onClick(); render(); }
+  };
+}
+
+// ─── Paleta ───────────────────────────────────────────────────────────────────
+const C = {
+  brasil:    '#1a73e8',
+  mexico:    '#e37400',
+  primetime: '#1a73e8',
+  day:       '#34a853',
+  greytime:  '#9aa0a6',
+  tvCable:   '#1a73e8',
+  tvAbierta: '#34a853',
+  radioFm:   '#e37400',
+  radioAm:   '#9334e8',
+  bg:        '#f1f3f4',
+  grid:      '#e8eaed',
+  text:      '#5f6368',
+};
+
+const MEDIO_COLOR = {
+  TELEVISION_CABLE:   C.tvCable,
+  TELEVISION_ABIERTA: C.tvAbierta,
+  RADIO_FM:           C.radioFm,
+  RADIO_AM:           C.radioAm,
+};
+
+const MEDIO_LABEL = {
+  TELEVISION_CABLE:   'TV Cable',
+  TELEVISION_ABIERTA: 'TV Abierta',
+  RADIO_FM:           'Radio FM',
+  RADIO_AM:           'Radio AM',
+};
+
+const SEG_COLOR = { Primetime: C.primetime, Day: C.day, Greytime: C.greytime };
+
+const DUR_BUCKETS = [
+  { label: '0–15s',  color: '#1a73e8', fn: d => d <= 15 },
+  { label: '16–30s', color: '#34a853', fn: d => d > 15 && d <= 30 },
+  { label: '31–45s', color: '#e37400', fn: d => d > 30 && d <= 45 },
+  { label: '46–60s', color: '#9334e8', fn: d => d > 45 && d <= 60 },
+  { label: '+60s',   color: '#9aa0a6', fn: d => d > 60 },
+];
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let allData = [];
+let filters = { mercado: 'ALL', medio: 'ALL', segmento: 'ALL', isValid: 'true', duracion: 'ALL' };
+
+// ─── CSV Parser ───────────────────────────────────────────────────────────────
+function parseCSVLine(line) {
+  const fields = [];
+  let field = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQ && line[i + 1] === '"') { field += '"'; i++; }
+      else inQ = !inQ;
+    } else if (ch === ',' && !inQ) {
+      fields.push(field.trim());
+      field = '';
+    } else {
+      field += ch;
+    }
+  }
+  fields.push(field.trim());
+  return fields;
+}
+
+function parseCSV(text) {
+  const lines = text.replace(/\r/g, '').trim().split('\n');
+  const headers = parseCSVLine(lines[0]);
+  return lines.slice(1).filter(l => l.trim()).map(line => {
+    const vals = parseCSVLine(line);
+    const obj = {};
+    headers.forEach((h, i) => obj[h.trim()] = (vals[i] || '').trim());
+    return obj;
+  });
+}
+
+// ─── Filter ───────────────────────────────────────────────────────────────────
+function applyFilters(data) {
+  return data.filter(r => {
+    if (filters.isValid  !== 'ALL' && r.is_valid          !== filters.isValid)  return false;
+    if (filters.mercado  !== 'ALL' && r.mercado            !== filters.mercado)  return false;
+    if (filters.medio    !== 'ALL' && r.medio               !== filters.medio)   return false;
+    if (filters.segmento !== 'ALL' && r.segmento_horario   !== filters.segmento) return false;
+    if (filters.duracion !== 'ALL') {
+      const bucket = DUR_BUCKETS.find(b => b.label === filters.duracion);
+      if (bucket && !bucket.fn(+r.duracion_segundos)) return false;
+    }
+    return true;
+  });
+}
+
+// ─── Format helpers ───────────────────────────────────────────────────────────
+function fmtUSD(v) {
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'k';
+  return '$' + v.toFixed(0);
+}
+
+function fmtNum(v) {
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + 'k';
+  return v.toLocaleString();
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  const data = applyFilters(allData);
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+
+  if (data.length === 0) {
+    content.innerHTML = '<div class="error-msg"><strong>Sin resultados</strong>No hay spots para los filtros seleccionados.</div>';
+    return;
+  }
+
+  // ── Scorecards ──
+  const totalSpots   = data.length;
+  const invTotal     = data.reduce((s, r) => s + (+r.costo_usd_final || 0), 0);
+  const durHoras     = data.reduce((s, r) => s + (+r.duracion_segundos || 0), 0) / 3600;
+  const marcasUnicas = new Set(data.map(r => r.marca_comercial)).size;
+  const sinReal      = data.filter(r => !r.costo_usd_real || r.costo_usd_real === '').length;
+  const pctEstimado  = ((sinReal / totalSpots) * 100).toFixed(1);
+  const costoPromedio = invTotal / totalSpots;
+
+  const scDiv = document.createElement('div');
+  scDiv.className = 'scorecards';
+  scDiv.style.gridTemplateColumns = 'repeat(6, 1fr)';
+  scDiv.innerHTML = `
+    ${sc('Total Spots',        fmtNum(totalSpots),        '')}
+    ${sc('Inversión Total USD', fmtUSD(invTotal),          'Costo USD final')}
+    ${sc('Costo Promedio/Spot', fmtUSD(costoPromedio),     'por spot')}
+    ${sc('Duración Total',      durHoras.toFixed(1) + ' hs','en horas')}
+    ${sc('Marcas Únicas',       marcasUnicas,               '')}
+    ${sc('% Costo Estimado',    pctEstimado + '%',          'sin costo real')}
+  `;
+  content.appendChild(scDiv);
+
+  // ── Ratio falsos positivos (siempre desde allData, no filtrado) ──
+  const fpDiv = document.createElement('div');
+  fpDiv.className = 'fp-row';
+  ['BRASIL', 'MEXICO'].forEach(m => {
+    const total  = allData.filter(r => r.mercado === m).length;
+    const falsos = allData.filter(r => r.mercado === m && r.is_valid === 'false').length;
+    const pct    = total > 0 ? ((falsos / total) * 100).toFixed(1) : '0.0';
+    const isBad  = +pct > 1;
+    fpDiv.innerHTML += `
+      <div class="fp-card">
+        <div>
+          <div class="fp-label">Falsos positivos — ${m === 'BRASIL' ? 'Brasil' : 'México'}</div>
+          <div class="fp-sub">${falsos} de ${fmtNum(total)} spots · calidad del proveedor</div>
+        </div>
+        <div>
+          <div class="fp-pct ${isBad ? 'bad' : 'ok'}">${pct}%</div>
+        </div>
+      </div>`;
+  });
+  content.appendChild(fpDiv);
+
+  // ── Row 1: Stacked bars + Donut medio + Donut duración ──
+  const row1 = document.createElement('div');
+  row1.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;';
+
+  const stackCard = chartCard('Inversión por Mercado y Segmento', 'USD · costo usd final acumulado, apilado por franja horaria');
+  const stackCanvas = el('canvas', { height: 180 });
+  stackCard.appendChild(stackCanvas);
+  row1.appendChild(stackCard);
+
+  const donutCard = chartCard('Distribución por Medio', 'Cantidad de spots emitidos por tipo de medio');
+  const donutWrap = document.createElement('div');
+  donutWrap.style.cssText = 'display:flex;align-items:center;gap:12px;';
+  const donutCanvas = el('canvas', { width: 150, height: 150 });
+  donutWrap.appendChild(donutCanvas);
+  const donutLegend = document.createElement('div');
+  donutLegend.className = 'legend';
+  donutLegend.style.flexDirection = 'column';
+  donutWrap.appendChild(donutLegend);
+  donutCard.appendChild(donutWrap);
+  row1.appendChild(donutCard);
+
+  const durCard = chartCard('Mix de Duración', 'Cantidad de spots por duración del aviso (segundos)');
+  const durWrap = document.createElement('div');
+  durWrap.style.cssText = 'display:flex;align-items:center;gap:12px;';
+  const durCanvas = el('canvas', { width: 150, height: 150 });
+  durWrap.appendChild(durCanvas);
+  const durLegend = document.createElement('div');
+  durLegend.className = 'legend';
+  durLegend.style.flexDirection = 'column';
+  durWrap.appendChild(durLegend);
+  durCard.appendChild(durWrap);
+  row1.appendChild(durCard);
+
+  content.appendChild(row1);
+
+  // ── Row 2: Spots por día ──
+  const row2 = document.createElement('div');
+  const dayCard = chartCard('Volumen de Spots por Día', 'Cantidad de spots emitidos por fecha, separado por mercado');
+  const dayCanvas = el('canvas', { height: 180 });
+  dayCard.appendChild(dayCanvas);
+  row2.appendChild(dayCard);
+  content.appendChild(row2);
+
+  // ── Row 3: Top marcas + Top canales + Top sectores ──
+  const row3 = document.createElement('div');
+  row3.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;';
+
+  const marcasCard = chartCard('Top 10 Marcas', 'USD invertidos · suma de costo usd final');
+  const marcasList = document.createElement('div');
+  marcasList.className = 'hbar-list';
+  marcasCard.appendChild(marcasList);
+  row3.appendChild(marcasCard);
+
+  const canalesCard = chartCard('Top 10 Canales', 'Cantidad de spots emitidos por canal');
+  const canalesList = document.createElement('div');
+  canalesList.className = 'hbar-list';
+  canalesCard.appendChild(canalesList);
+  row3.appendChild(canalesCard);
+
+  const sectoresCard = chartCard('Top 10 Sectores', 'USD invertidos · suma de costo usd final');
+  const sectoresList = document.createElement('div');
+  sectoresList.className = 'hbar-list';
+  sectoresCard.appendChild(sectoresList);
+  row3.appendChild(sectoresCard);
+
+  content.appendChild(row3);
+
+  // ── Row 4: Real vs Estimado + Top grupos de canal ──
+  const row4 = document.createElement('div');
+  row4.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;';
+
+  const realEstCard = chartCard('Inversión Real vs Estimada', 'USD · color sólido = costo real disponible · color claro = costo imputado por promedio de segmento');
+  const realEstCanvas = el('canvas', { height: 200 });
+  realEstCard.appendChild(realEstCanvas);
+  row4.appendChild(realEstCard);
+
+  const gruposCard = chartCard('Top 10 Grupos de Canal', 'Cantidad de spots emitidos por grupo/red propietaria del canal');
+  const gruposList = document.createElement('div');
+  gruposList.className = 'hbar-list';
+  gruposCard.appendChild(gruposList);
+  row4.appendChild(gruposCard);
+
+  content.appendChild(row4);
+
+  // ── Row 5: Heatmap spots por hora ──
+  const row5 = document.createElement('div');
+  const hmCard = chartCard('Distribución Horaria de Spots', 'Cantidad de spots por hora local · intensidad = volumen · color = franja horaria');
+  const hmContainer = document.createElement('div');
+  hmCard.appendChild(hmContainer);
+  row5.appendChild(hmCard);
+  content.appendChild(row5);
+
+  // ─── Draw all ───
+  drawStackedBars(stackCanvas, data);
+  drawDonut(donutCanvas, donutLegend, data);
+  drawDurationDonut(durCanvas, durLegend, data);
+  drawDayBars(dayCanvas, data);
+  drawHBars(marcasList,   topMarcas(data),   C.brasil,   fmtUSD);
+  drawHBars(canalesList,  topCanales(data),  C.mexico,   fmtNum);
+  drawHBars(sectoresList, topSectores(data), '#9334e8',  fmtUSD);
+  drawRealVsEstimado(realEstCanvas, data);
+  drawHBars(gruposList, topGrupos(data), C.mexico, fmtNum);
+  drawHourlyHeatmap(hmContainer, data);
+}
+
+// ─── Stacked bars ─────────────────────────────────────────────────────────────
+function drawStackedBars(canvas, data) {
+  const mercados = [...new Set(data.map(r => r.mercado))].sort();
+  const segs = ['Primetime', 'Day', 'Greytime'];
+
+  // Aggregate
+  const agg = {};
+  mercados.forEach(m => { agg[m] = {}; segs.forEach(s => agg[m][s] = 0); });
+  data.forEach(r => {
+    if (agg[r.mercado] && segs.includes(r.segmento_horario))
+      agg[r.mercado][r.segmento_horario] += (+r.costo_usd_final || 0);
+  });
+
+  const maxVal = Math.max(...mercados.map(m => segs.reduce((s, seg) => s + agg[m][seg], 0)));
+
+  const W = canvas.parentElement.clientWidth - 40;
+  canvas.width  = W;
+  canvas.height = 180;
+  const ctx = canvas.getContext('2d');
+
+  const PAD = { top: 20, right: 20, bottom: 40, left: 60 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = canvas.height - PAD.top - PAD.bottom;
+  const barW = Math.min(80, cW / mercados.length / 1.8);
+  const gap   = cW / mercados.length;
+
+  // Grid
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+  [0, 0.25, 0.5, 0.75, 1].forEach(t => {
+    const y = PAD.top + cH * (1 - t);
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(W - PAD.right, y); ctx.stroke();
+    ctx.fillStyle = C.text; ctx.font = '10px Arial'; ctx.textAlign = 'right';
+    ctx.fillText(fmtUSD(maxVal * t), PAD.left - 6, y + 3);
+  });
+
+  // Bars
+  const hits = [];
+  mercados.forEach((m, i) => {
+    const x = PAD.left + gap * i + gap / 2 - barW / 2;
+    let yBase = PAD.top + cH;
+    const total = segs.reduce((s, seg) => s + agg[m][seg], 0);
+    segs.forEach(seg => {
+      const val = agg[m][seg];
+      const h = maxVal > 0 ? (val / maxVal) * cH : 0;
+      ctx.fillStyle = SEG_COLOR[seg];
+      ctx.fillRect(x, yBase - h, barW, h);
+      if (h > 0) hits.push({ x, y: yBase - h, w: barW, h,
+        html: `<strong>${m === 'BRASIL' ? 'Brasil' : 'México'} · ${seg}</strong><br>${fmtUSD(val)}<br><em style="font-size:10px;opacity:0.7">Click para filtrar</em>`,
+        onClick: () => {
+          const active = filters.mercado === m && filters.segmento === seg;
+          setFilter('mercado',  active ? 'ALL' : m);
+          setFilter('segmento', active ? 'ALL' : seg);
+        }
+      });
+      yBase -= h;
+    });
+    ctx.fillStyle = '#202124'; ctx.font = '11px Arial'; ctx.textAlign = 'center';
+    ctx.fillText(m === 'BRASIL' ? 'Brasil' : 'México', PAD.left + gap * i + gap / 2, PAD.top + cH + 16);
+  });
+  registerHits(canvas, hits);
+
+  // Legend
+  const lx = PAD.left;
+  const ly = canvas.height - 8;
+  segs.forEach((seg, i) => {
+    const x = lx + (cW / 3) * i + cW / 6;
+    ctx.fillStyle = SEG_COLOR[seg];
+    ctx.fillRect(x - 30, ly - 8, 10, 10);
+    ctx.fillStyle = C.text; ctx.font = '10px Arial'; ctx.textAlign = 'left';
+    ctx.fillText(seg, x - 17, ly);
+  });
+}
+
+// ─── Donut ────────────────────────────────────────────────────────────────────
+function drawDonut(canvas, legendEl, data) {
+  const counts = {};
+  Object.keys(MEDIO_COLOR).forEach(m => counts[m] = 0);
+  data.forEach(r => { if (counts[r.medio] !== undefined) counts[r.medio]++; });
+
+  const total = Object.values(counts).reduce((s, v) => s + v, 0);
+  const entries = Object.entries(counts).filter(([, v]) => v > 0);
+
+  canvas.width = 160; canvas.height = 160;
+  const ctx = canvas.getContext('2d');
+  const cx = 80, cy = 80, outerR = 70, innerR = 42;
+  let angle = -Math.PI / 2;
+  const arcSlices = [];
+
+  entries.forEach(([medio, count]) => {
+    const slice = (count / total) * 2 * Math.PI;
+    arcSlices.push({ medio, start: angle, end: angle + slice });
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, outerR, angle, angle + slice);
+    ctx.closePath();
+    ctx.fillStyle = MEDIO_COLOR[medio];
+    ctx.fill();
+
+    // Inner white ring
+    ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
+    ctx.fillStyle = '#fff'; ctx.fill();
+
+    angle += slice;
+  });
+
+  // Click: detect which slice was clicked by angle + distance
+  canvas.style.cursor = 'pointer';
+  canvas.onclick = e => {
+    const rect = canvas.getBoundingClientRect();
+    const dx = e.clientX - rect.left - cx, dy = e.clientY - rect.top - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < innerR || dist > outerR) return;
+    let a = Math.atan2(dy, dx);
+    if (a < -Math.PI / 2) a += 2 * Math.PI;
+    const s = arcSlices.find(sl => a >= sl.start && a < sl.end);
+    if (s) { setFilter('medio', filters.medio === s.medio ? 'ALL' : s.medio); render(); }
+  };
+  canvas.onmousemove = e => {
+    const rect = canvas.getBoundingClientRect();
+    const dx = e.clientX - rect.left - cx, dy = e.clientY - rect.top - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    canvas.style.cursor = (dist >= innerR && dist <= outerR) ? 'pointer' : 'default';
+  };
+  canvas.onmouseleave = hideTip;
+
+  // Center label
+  ctx.fillStyle = '#202124'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center';
+  ctx.fillText(fmtNum(total), cx, cy + 4);
+  ctx.fillStyle = C.text; ctx.font = '10px Arial';
+  ctx.fillText('spots', cx, cy + 16);
+
+  // Legend
+  legendEl.innerHTML = '';
+  entries.forEach(([medio, count]) => {
+    const pct = ((count / total) * 100).toFixed(1);
+    legendEl.innerHTML += `
+      <div class="legend-item">
+        <div class="legend-dot" style="background:${MEDIO_COLOR[medio]}"></div>
+        <span>${MEDIO_LABEL[medio] || medio}: <strong>${fmtNum(count)}</strong> (${pct}%)</span>
+      </div>`;
+  });
+}
+
+// ─── Day bars ─────────────────────────────────────────────────────────────────
+function drawDayBars(canvas, data) {
+  const byDay = {};
+  data.forEach(r => {
+    const d = r.fecha_emision;
+    if (!byDay[d]) byDay[d] = { BRASIL: 0, MEXICO: 0 };
+    if (byDay[d][r.mercado] !== undefined) byDay[d][r.mercado]++;
+  });
+
+  const dates = Object.keys(byDay).sort();
+  const maxVal = Math.max(...dates.map(d => byDay[d].BRASIL + byDay[d].MEXICO));
+
+  const W = canvas.parentElement.clientWidth - 40;
+  canvas.width = W; canvas.height = 180;
+  const ctx = canvas.getContext('2d');
+
+  const PAD = { top: 20, right: 20, bottom: 40, left: 50 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = canvas.height - PAD.top - PAD.bottom;
+  const grpW = cW / dates.length;
+  const barW = Math.min(28, grpW / 3);
+
+  // Grid
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+  [0, 0.25, 0.5, 0.75, 1].forEach(t => {
+    const y = PAD.top + cH * (1 - t);
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(W - PAD.right, y); ctx.stroke();
+    ctx.fillStyle = C.text; ctx.font = '10px Arial'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxVal * t), PAD.left - 5, y + 3);
+  });
+
+  // Bars
+  const hits = [];
+  dates.forEach((d, i) => {
+    const gx = PAD.left + grpW * i + grpW / 2;
+    ['BRASIL', 'MEXICO'].forEach((m, mi) => {
+      const val = byDay[d][m];
+      const h = maxVal > 0 ? (val / maxVal) * cH : 0;
+      const x = gx + (mi - 0.5) * (barW + 3);
+      ctx.fillStyle = m === 'BRASIL' ? C.brasil : C.mexico;
+      ctx.fillRect(x, PAD.top + cH - h, barW, h);
+      if (h > 0) hits.push({ x, y: PAD.top + cH - h, w: barW, h,
+        html: `<strong>${m === 'BRASIL' ? 'Brasil' : 'México'}</strong><br>${d}<br>${fmtNum(val)} spots<br><em style="font-size:10px;opacity:0.7">Click para filtrar</em>`,
+        onClick: () => setFilter('mercado', filters.mercado === m ? 'ALL' : m)
+      });
+    });
+    const label = d.slice(5);
+    ctx.fillStyle = C.text; ctx.font = '10px Arial'; ctx.textAlign = 'center';
+    ctx.fillText(label, PAD.left + grpW * i + grpW / 2, PAD.top + cH + 14);
+  });
+  registerHits(canvas, hits);
+
+  // Legend
+  const ly = canvas.height - 6;
+  [['Brasil', C.brasil], ['México', C.mexico]].forEach(([label, color], i) => {
+    const x = PAD.left + cW / 2 + (i - 0.5) * 80;
+    ctx.fillStyle = color; ctx.fillRect(x - 20, ly - 9, 10, 10);
+    ctx.fillStyle = C.text; ctx.font = '10px Arial'; ctx.textAlign = 'left';
+    ctx.fillText(label, x - 7, ly);
+  });
+}
+
+// ─── Duration donut ───────────────────────────────────────────────────────────
+function drawDurationDonut(canvas, legendEl, data) {
+  const DUR_COLORS = Object.fromEntries(DUR_BUCKETS.map(b => [b.label, b.color]));
+  const counts = Object.fromEntries(DUR_BUCKETS.map(b => [b.label, 0]));
+  data.forEach(r => {
+    const d = +r.duracion_segundos;
+    const bucket = DUR_BUCKETS.find(b => b.fn(d));
+    if (bucket) counts[bucket.label]++;
+  });
+  const total = Object.values(counts).reduce((s, v) => s + v, 0);
+  const entries = Object.entries(counts).filter(([, v]) => v > 0);
+
+  canvas.width = 150; canvas.height = 150;
+  const ctx = canvas.getContext('2d');
+  const cx = 75, cy = 75, outerR = 65, innerR = 40;
+  let angle = -Math.PI / 2;
+  const arcSlices = [];
+
+  entries.forEach(([label, count]) => {
+    const slice = (count / total) * 2 * Math.PI;
+    arcSlices.push({ label, start: angle, end: angle + slice });
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, outerR, angle, angle + slice); ctx.closePath();
+    ctx.fillStyle = DUR_COLORS[label]; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
+    ctx.fillStyle = '#fff'; ctx.fill();
+    angle += slice;
+  });
+
+  ctx.fillStyle = '#202124'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center';
+  ctx.fillText(fmtNum(total), cx, cy + 4);
+  ctx.fillStyle = C.text; ctx.font = '10px Arial';
+  ctx.fillText('spots', cx, cy + 16);
+
+  legendEl.innerHTML = '';
+  entries.forEach(([label, count]) => {
+    const pct = ((count / total) * 100).toFixed(1);
+    legendEl.innerHTML += `<div class="legend-item">
+      <div class="legend-dot" style="background:${DUR_COLORS[label]}"></div>
+      <span>${label}: <strong>${fmtNum(count)}</strong> (${pct}%)</span></div>`;
+  });
+
+  const hitSlice = e => {
+    const rect = canvas.getBoundingClientRect();
+    const dx = e.clientX - rect.left - cx, dy = e.clientY - rect.top - cy;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < innerR || dist > outerR) return null;
+    let a = Math.atan2(dy, dx);
+    if (a < -Math.PI/2) a += 2*Math.PI;
+    return arcSlices.find(sl => a >= sl.start && a < sl.end) || null;
+  };
+  canvas.onmousemove = e => {
+    const s = hitSlice(e);
+    if (s) { showTip(e, `<strong>${s.label}</strong><br>${fmtNum(counts[s.label])} spots (${((counts[s.label]/total)*100).toFixed(1)}%)<br><em style="font-size:10px;opacity:0.7">Click para filtrar</em>`); canvas.style.cursor = 'pointer'; }
+    else   { hideTip(); canvas.style.cursor = 'default'; }
+  };
+  canvas.onclick = e => {
+    const s = hitSlice(e);
+    if (s) { setFilter('duracion', filters.duracion === s.label ? 'ALL' : s.label); render(); }
+  };
+  canvas.onmouseleave = hideTip;
+}
+
+// ─── Top sectores ─────────────────────────────────────────────────────────────
+function topSectores(data) {
+  const agg = {};
+  data.forEach(r => {
+    const k = (r.sector || 'Sin sector').trim() || 'Sin sector';
+    agg[k] = (agg[k] || 0) + (+r.costo_usd_final || 0);
+  });
+  return Object.entries(agg).sort((a, b) => b[1] - a[1]).slice(0, 10)
+    .map(([label, val]) => ({ label, val }));
+}
+
+// ─── Heatmap por hora ─────────────────────────────────────────────────────────
+function drawHourlyHeatmap(container, data) {
+  const SEG_HOUR = h => {
+    if (h >= 18 || h <= 1) return 'Primetime';
+    if (h >= 8  && h <= 17) return 'Day';
+    return 'Greytime';
+  };
+
+  // Count spots per hour per mercado
+  const hours = Array.from({length: 24}, (_, i) => i);
+  const byHour = { BRASIL: {}, MEXICO: {} };
+  hours.forEach(h => { byHour.BRASIL[h] = 0; byHour.MEXICO[h] = 0; });
+  data.forEach(r => {
+    const h = +r.hora_emision.split(':')[0];
+    if (byHour[r.mercado] !== undefined) byHour[r.mercado][h]++;
+  });
+
+  const allVals = hours.flatMap(h => [byHour.BRASIL[h], byHour.MEXICO[h]]);
+  const maxVal = Math.max(...allVals, 1);
+
+  container.style.cssText = 'overflow-x:auto;';
+  const grid = document.createElement('div');
+  grid.style.cssText = `display:grid;grid-template-columns:60px repeat(24,1fr);gap:3px;min-width:600px;`;
+
+  // Header row — hours
+  grid.innerHTML = '<div></div>' + hours.map(h => `<div class="hm-axis">${String(h).padStart(2,'0')}</div>`).join('');
+
+  // Brasil + México rows
+  ['BRASIL', 'MEXICO'].forEach(m => {
+    const labelDiv = document.createElement('div');
+    labelDiv.style.cssText = 'font-size:11px;color:#5f6368;display:flex;align-items:center;font-weight:500;';
+    labelDiv.textContent = m === 'BRASIL' ? 'Brasil' : 'México';
+    grid.appendChild(labelDiv);
+
+    hours.forEach(h => {
+      const count = byHour[m][h];
+      const intensity = count / maxVal;
+      const seg = SEG_HOUR(h);
+      const baseColor = seg === 'Primetime' ? [26,115,232] : seg === 'Day' ? [52,168,83] : [154,160,166];
+      const alpha = 0.12 + intensity * 0.88;
+      const cell = document.createElement('div');
+      cell.className = 'hm-cell';
+      cell.style.cssText = `background:rgba(${baseColor.join(',')},${alpha.toFixed(2)});height:32px;`;
+      cell.title = `${m === 'BRASIL' ? 'Brasil' : 'México'} · ${String(h).padStart(2,'0')}:00 → ${count} spots (${seg})`;
+      if (count > 0) cell.textContent = count > 9 ? count : '';
+      grid.appendChild(cell);
+    });
+  });
+
+  // Segment legend
+  const legDiv = document.createElement('div');
+  legDiv.style.cssText = 'margin-top:8px;display:flex;gap:16px;';
+  legDiv.innerHTML = [['Primetime','#1a73e8'],['Day','#34a853'],['Greytime','#9aa0a6']]
+    .map(([l,c]) => `<div class="legend-item"><div class="legend-dot" style="background:${c}"></div><span>${l}</span></div>`).join('');
+
+  container.appendChild(grid);
+  container.appendChild(legDiv);
+}
+
+// ─── Real vs Estimado por mercado ────────────────────────────────────────────
+function drawRealVsEstimado(canvas, data) {
+  const mercados = ['BRASIL', 'MEXICO'];
+  const agg = {};
+  mercados.forEach(m => { agg[m] = { real: 0, estimado: 0 }; });
+  data.forEach(r => {
+    if (!agg[r.mercado]) return;
+    const real = +r.costo_usd_real || 0;
+    const final = +r.costo_usd_final || 0;
+    agg[r.mercado].real     += real;
+    agg[r.mercado].estimado += (final - real);
+  });
+
+  const maxVal = Math.max(...mercados.map(m => agg[m].real + agg[m].estimado), 1);
+  const W = canvas.parentElement.clientWidth - 40;
+  canvas.width = W; canvas.height = 200;
+  const ctx = canvas.getContext('2d');
+
+  const PAD = { top: 20, right: 20, bottom: 50, left: 70 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = canvas.height - PAD.top - PAD.bottom;
+  const barW = Math.min(90, cW / mercados.length / 1.6);
+  const gap  = cW / mercados.length;
+
+  // Grid
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+  [0, 0.25, 0.5, 0.75, 1].forEach(t => {
+    const y = PAD.top + cH * (1 - t);
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(W - PAD.right, y); ctx.stroke();
+    ctx.fillStyle = C.text; ctx.font = '10px Arial'; ctx.textAlign = 'right';
+    ctx.fillText(fmtUSD(maxVal * t), PAD.left - 6, y + 3);
+  });
+
+  const hits = [];
+  mercados.forEach((m, i) => {
+    const x   = PAD.left + gap * i + gap / 2 - barW / 2;
+    const hR  = maxVal > 0 ? (agg[m].real     / maxVal) * cH : 0;
+    const hE  = maxVal > 0 ? (agg[m].estimado / maxVal) * cH : 0;
+    const yBase = PAD.top + cH;
+
+    // Costo real (bottom)
+    ctx.fillStyle = m === 'BRASIL' ? C.brasil : C.mexico;
+    ctx.fillRect(x, yBase - hR, barW, hR);
+    if (hR > 0) hits.push({ x, y: yBase - hR, w: barW, h: hR,
+      html: `<strong>${m === 'BRASIL' ? 'Brasil' : 'México'} · Real</strong><br>${fmtUSD(agg[m].real)}` });
+
+    // Costo estimado (top, lighter)
+    ctx.fillStyle = m === 'BRASIL' ? '#8ab4f8' : '#f9ab5d';
+    ctx.fillRect(x, yBase - hR - hE, barW, hE);
+    if (hE > 0) hits.push({ x, y: yBase - hR - hE, w: barW, h: hE,
+      html: `<strong>${m === 'BRASIL' ? 'Brasil' : 'México'} · Estimado</strong><br>${fmtUSD(agg[m].estimado)}` });
+
+    // % estimado label
+    const pct = agg[m].real + agg[m].estimado > 0
+      ? ((agg[m].estimado / (agg[m].real + agg[m].estimado)) * 100).toFixed(0) : '0';
+    ctx.fillStyle = '#202124'; ctx.font = '11px Arial'; ctx.textAlign = 'center';
+    ctx.fillText(m === 'BRASIL' ? 'Brasil' : 'México', PAD.left + gap * i + gap / 2, PAD.top + cH + 16);
+    ctx.fillStyle = C.text; ctx.font = '10px Arial';
+    ctx.fillText(`${pct}% estimado`, PAD.left + gap * i + gap / 2, PAD.top + cH + 30);
+  });
+  registerHits(canvas, hits);
+
+  // Legend
+  const ly = canvas.height - 6;
+  [['Real', C.brasil, C.mexico], ['Estimado', '#8ab4f8', '#f9ab5d']].forEach(([label, c1, c2], i) => {
+    const x = PAD.left + cW / 2 + (i - 0.5) * 100;
+    ctx.fillStyle = c1; ctx.fillRect(x - 26, ly - 9, 8, 10);
+    ctx.fillStyle = c2; ctx.fillRect(x - 15, ly - 9, 8, 10);
+    ctx.fillStyle = C.text; ctx.font = '10px Arial'; ctx.textAlign = 'left';
+    ctx.fillText(label, x - 3, ly);
+  });
+}
+
+// ─── Top grupos de canal ──────────────────────────────────────────────────────
+function topGrupos(data) {
+  const agg = {};
+  data.forEach(r => {
+    const k = (r.grupo_canal || 'Sin grupo').trim() || 'Sin grupo';
+    agg[k] = (agg[k] || 0) + 1;
+  });
+  return Object.entries(agg).sort((a, b) => b[1] - a[1]).slice(0, 10)
+    .map(([label, val]) => ({ label, val }));
+}
+
+// ─── Top marcas ───────────────────────────────────────────────────────────────
+function topMarcas(data) {
+  const agg = {};
+  data.forEach(r => {
+    const k = r.marca_comercial;
+    agg[k] = (agg[k] || 0) + (+r.costo_usd_final || 0);
+  });
+  return Object.entries(agg).sort((a, b) => b[1] - a[1]).slice(0, 10)
+    .map(([label, val]) => ({ label, val }));
+}
+
+function topCanales(data) {
+  const agg = {};
+  data.forEach(r => { const k = r.canal_normalizado; agg[k] = (agg[k] || 0) + 1; });
+  return Object.entries(agg).sort((a, b) => b[1] - a[1]).slice(0, 10)
+    .map(([label, val]) => ({ label, val }));
+}
+
+function drawHBars(container, items, color, fmtFn) {
+  if (!items.length) return;
+  const maxVal = items[0].val;
+  container.innerHTML = items.map(({ label, val }) => `
+    <div class="hbar-item" title="${label}: ${fmtFn(val)}">
+      <div class="hbar-label" title="${label}">${label}</div>
+      <div class="hbar-track">
+        <div class="hbar-fill" style="width:${maxVal > 0 ? (val/maxVal*100).toFixed(1) : 0}%;background:${color}"></div>
+      </div>
+      <div class="hbar-val">${fmtFn(val)}</div>
+    </div>`).join('');
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function sc(label, value, sub) {
+  return `<div class="scorecard">
+    <div class="scorecard-label">${label}</div>
+    <div class="scorecard-value">${value}</div>
+    ${sub ? `<div class="scorecard-sub">${sub}</div>` : ''}
+  </div>`;
+}
+
+function chartCard(title, subtitle) {
+  const div = document.createElement('div');
+  div.className = 'chart-card';
+  const h = document.createElement('div');
+  h.className = 'chart-title';
+  h.textContent = title;
+  div.appendChild(h);
+  if (subtitle) {
+    const s = document.createElement('div');
+    s.style.cssText = 'font-size:11px;color:#80868b;margin-top:-8px;margin-bottom:10px;';
+    s.textContent = subtitle;
+    div.appendChild(s);
+  }
+  return div;
+}
+
+function el(tag, attrs = {}) {
+  const e = document.createElement(tag);
+  Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
+  return e;
+}
+
+// ─── Filter wiring ────────────────────────────────────────────────────────────
+['mercado', 'medio', 'segmento', 'isValid', 'duracion'].forEach(key => {
+  document.getElementById(`filter-${key}`).addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    document.querySelectorAll(`#filter-${key} .filter-btn`).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filters[key] = btn.dataset.val;
+    render();
+  });
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  filters = { mercado: 'ALL', medio: 'ALL', segmento: 'ALL', isValid: 'true', duracion: 'ALL' };
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn[data-val="ALL"]').forEach(b => b.classList.add('active'));
+  document.querySelector('#filter-isValid .filter-btn[data-val="true"]').classList.add('active');
+  document.querySelector('#filter-isValid .filter-btn[data-val="ALL"]').classList.remove('active');
+  render();
+});
+
+// ─── Load data ────────────────────────────────────────────────────────────────
+fetch('./spot_latam.csv')
+  .then(r => {
+    if (!r.ok) throw new Error('not found');
+    return r.text();
+  })
+  .then(text => {
+    allData = parseCSV(text);
+    render();
+  })
+  .catch(() => {
+    document.getElementById('content').innerHTML = `
+      <div class="error-msg">
+        <strong>No se encontró el archivo CSV</strong>
+        Colocá <code>spot_latam.csv</code> en la misma carpeta que este HTML y recargá la página.
+      </div>`;
+  });
+
+// Re-render on resize
+window.addEventListener('resize', () => { if (allData.length) render(); });
+</script>
+</body>
+</html>
